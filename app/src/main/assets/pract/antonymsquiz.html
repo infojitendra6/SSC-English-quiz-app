@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+ 
+<style>
+body{
+ margin:0;
+  background-image: linear-gradient(to bottom right, red, yellow);
+  font-family: sans-serif;
+}
+
+.question-number,
+.question,
+.options,
+.button,
+.answers-tracker{
+ float: left;
+ width: 100%;
+}
+.question-number h3{
+text-align: center;
+ color:green;
+ border-bottom: 1px solid #ccc;
+ margin:0;
+ padding-bottom:10px;
+}
+.question {
+text-align: center;
+ font-size:22px;
+ color:#fff;
+ text-style:bold;
+
+ padding:20px 0;
+ 
+}
+
+.options div{
+  background-color: #cccccc;
+  font-size:16px;
+  color:000000;
+  
+  margin-bottom:10px;
+  border-radius:5px;
+  padding:10px;
+  position: relative;
+  overflow:hidden;
+  cursor: pointer;
+}
+.options div.disabled{
+ pointer-events: none;
+}
+.options div.correct{
+ z-index: 1;
+ color: #fff;
+}
+.options div.correct::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color: green;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+.options div.wrong{
+ z-index: 1;
+ color: #fff;
+}
+.options div.wrong::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color:red;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+
+
+.button .btn{
+ padding:15px 50px;
+ border-radius:5px;
+ cursor: pointer;
+ width: 100%;
+ background-color:green;
+ font-size:16px;
+   justify-content: center;
+  
+ color:#ffffff;
+ border: none;
+ display: inline-block;
+ margin:15px 0 20px;
+}
+
+
+
+.quiz-over{
+ position: fixed;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-image: linear-gradient(to bottom right, red, yellow);
+ z-index: 10;
+ display: none;
+ align-items: center;
+ justify-content: center;
+}
+.quiz-over.show{
+ display: flex;
+}
+.quiz-over .box{
+ background-color: #009688;
+ padding:30px;
+ border-radius:10px;
+ text-align: center;
+ flex-basis: 700px;
+ max-width:700px;
+ color:#ffffff;
+}
+
+.quiz-over .box h1{
+ font-size:36px;
+ margin:0 0 20px;
+}
+
+.quiz-over .box button{
+ padding:15px 50px;
+ border:none;
+ background-color:#FF9800;
+ border-radius:5px;
+ font-size:16px;
+ margin:15px 0 20px;
+ color:#ffffff;
+}
+
+</style>
+</head>
+<body>
+     <div class="quizContainer container-fluid well well-lg">
+    <div class="question-number">
+       <h3><b>Question <span class="question-num-value"></span> of <span class="total-question"></span></b></h3>
+    </div>
+    <div class="question">
+      
+    </div>
+    <div class="options">
+       <div id="1" class="option1" onclick="check(this)"></div>
+       <div id="2" class="option2" onclick="check(this)"></div>
+       <div id="3" class="option3" onclick="check(this)"></div>
+       <div id="4" class="option4" onclick="check(this)"></div>
+    </div>
+    <div class="button">
+       <button type="button" class="btn" onclick="next()">Next</button>
+    </div>
+    <div class="answers-tracker">
+       
+    </div>
+
+ 
+ <div class="quiz-over">
+   <div class="box">
+     <h1>
+       Good Job<br>
+      You Correct! <span class="correct-answers"></span> out of <span class="total-question2"></span>  <br>
+      Your percentage is <span class="percentage"></span>.
+     </h1>
+     <button type="button" onclick="tryAgain()">TryAgain</button>
+   </div>
+ </div>
+</div>
+<script>
+  
+  const options=document.querySelector(".options").children;
+  const answerTrackerContainer=document.querySelector(".answers-tracker");
+  const questionNumberSpan=document.querySelector(".question-num-value");
+  const totalQuestionSpan=document.querySelector(".total-question");
+  const correctAnswerSpan=document.querySelector(".correct-answers");
+  const totalQuestionSpan2=document.querySelector(".total-question2");
+  const percentage=document.querySelector(".percentage");
+  const question=document.querySelector(".question");
+  const op1=document.querySelector(".option1");
+  const op2=document.querySelector(".option2");
+  const op3=document.querySelector(".option3");
+  const op4=document.querySelector(".option4");
+  let questionIndex;
+  let index=0;
+  let myArray=[];
+  let myArr=[];
+  let score=0;
+
+  // questions and options and answers
+
+  const questions=[
+   {
+    q:'OSTRACISE (Antonyms)',
+    options:['amuse','welcome','entertain','host'],
+    answer:2
+   },
+   {
+    q:'DENSE (Antonyms)',
+    options:['scarce','slim','sparse','lean'],
+    answer:3
+   },{
+    q:'PARSIMONIOUS (Antonyms)',
+    options:['prodigious','selfless','extravagant','ostentatious'],
+    answer:3
+   },{
+    q:'FETTER (Antonyms)',
+    options:['restore','liberate','exonerate','distract'],
+    answer:2
+   },{
+    q:'HARMONY (Antonyms)',
+    options:['strife','annoyance','cruelty','mischief'],
+    answer:1
+   },{
+    q:'CONCILIATION (Antonyms)',
+    options:['dispute',' irritation','separation','confrontation'],
+    answer:4
+   },{
+    q:'MYTH (Antonyms)',
+    options:['truth ',' fact','falsehood',' story'],
+    answer:2
+   },{
+    q:'RELUCTANTLY (Antonyms)',
+    options:['pleasingly','willingly','satisfactorily','happily'],
+    answer:2
+   },{
+    q:'MUTILATE (Antonyms)',
+    options:['instruct','induct','conduct','mend'],
+    answer:4
+   },{
+    q:'LAMENT (Antonyms)',
+    options:['rejoice',' rejuvenate','complain','cry'],
+    answer:1
+   },{
+    q:'ANIMOSITY (Antonyms)',
+    options:['love','lust','luck ','loss'],
+    answer:1
+   },{
+    q:'ALTERCATION (Antonyms)',
+    options:['explanation','challenge','compromise','opposition'],
+    answer:3
+   },{
+    q:'COAX (Antonyms)',
+    options:['dull ','dissuade','active','speed'],
+    answer:2
+   },{
+    q:'ERUDITE (Antonyms)',
+    options:['educated','unscholarly','scholarly','possessive'],
+    answer:2
+   },{
+    q:'AFFLUENT (Antonyms)',
+    options:['high ','poor','rare','fluent'],
+    answer:2
+   },{
+    q:'PAROCHIAL (Antonyms)',
+    options:['narrow','international','global','world wide'],
+    answer:3
+   },{
+    q:'FALLIBLE (Antonyms)',
+    options:['unerring','reliable','falsehood','trustful'],
+    answer:1
+   },{
+    q:'IMPERTINENT (Antonyms)',
+    options:['arrogance','appropriate','respectful','modest'],
+    answer:3
+   },{
+    q:'ROUGH (Antonyms)',
+    options:['refined','charming','smooth','polite'],
+    answer:3
+   },{
+    q:'RATIFICATION (Antonyms)',
+    options:['disapproval','disagreeable','denial','disturbing'],
+    answer:1
+   },{
+    q:' OMIT (Antonyms)',
+    options:['exclude','include','undertake','add'],
+    answer:2
+   },{
+    q:'INTEGRATION (Antonyms)',
+    options:['unity','synthesis','linking','fragmentation'],
+    answer:4
+   },{
+    q:'MINIATURE (Antonyms)',
+    options:['large','small','heavy','least'],
+    answer:1
+   },{
+    q:'EXHAUSTS (Antonyms)',
+    options:['tires ','empties','invigorates','drains'],
+    answer:3
+   },{
+    q:'DISTANT (Antonyms)',
+    options:['far','close','imminent','along'],
+    answer:2
+   },{
+    q:'TRANSPARENT (Antonyms)',
+    options:['clear ','ambiguity','opaque','crystal'],
+    answer:3
+   },{
+    q:'ENCOUNTERED (Antonyms)',
+    options:['avoided','enriched','faced ','overcome'],
+    answer:1
+   },{
+    q:'HANDY (Antonyms)',
+    options:['cumbersome','handful','unwieldy','heavy'],
+    answer:4
+   },{
+    q:'ELEGANCE (Antonyms)',
+    options:['pride ','beauty','coarseness','vulgarity'],
+    answer:4
+   },{
+    q:'CAPRICIOUS (Antonyms)',
+    options:['firm','fickle','indefinite','defian'],
+    answer:1
+   },{
+    q:'EXODUS (Antonyms)',
+    options:['influx','home-coming','return','restoration'],
+    answer:1
+   },{
+    q:'INQUISITIVE (Antonyms)',
+    options:['insincere','indifferent','insensitive','insulting'],
+    answer:2
+   },{
+    q:'CANDID (Antonyms)',
+    options:['outspoken','frank','devious','disguised'],
+    answer:3
+   },{
+    q:'NADIR (Antonyms)',
+    options:['modernity','zenith','liberty','progress'],
+    answer:2
+   },{
+    q:'CULPABLE (Antonyms)',
+    options:['defendable','blameless','careless','irresponsible'],
+    answer:2
+   },{
+    q:'FACILITATE (Antonyms)',
+    options:['help ','propogate','hinder','reject'],
+    answer:3
+   },{
+    q:'CRITICISE (Antonyms)',
+    options:['finish ','recommend','commend','request'],
+    answer:3
+   },{
+    q:'CONFORMITY (Antonyms)',
+    options:['deviation','dilution','distraction','diversion'],
+    answer:1
+   },{
+    q:'AFFIRM (Antonyms)',
+    options:['refuse','negate','neglect','avoid'],
+    answer:1
+   },{
+    q:'AUTONOMY (Antonyms)',
+    options:['slavery','subordination','dependence','submissiveness'],
+    answer:3
+   },{
+    q:'SURVIVAL (Antonyms)',
+    options:['evolution','development','creation','extinction'],
+    answer:4
+   },{
+    q:'INSERT (Antonyms)',
+    options:['depict','extract','defame','enhance'],
+    answer:2
+   },{
+    q:'INCONGRUOUS (Antonyms)',
+    options:['conflicting','contradictory','ill-matched','harmonious'],
+    answer:4
+   },{
+    q:'DEMENTED (Antonyms)',
+    options:['sensible','sensitive','sensual','sensuous'],
+    answer:1
+   },{
+    q:'IMPROMPTU (Antonyms)',
+    options:['prompt','forced','premeditated','inordinate'],
+    answer:3
+   },{
+    q:'HOSTILE (Antonyms)',
+    options:['friendly','sudden','costly','unfair'],
+    answer:1
+   },{
+    q:'BREADTH (Antonyms)',
+    options:['shortness','narrowness','lightness','thickness'],
+    answer:2
+   },{
+    q:'TIMOROUS (Antonyms)',
+    options:['trembling','cowardly','bright','bold'],
+    answer:4
+   },{
+    q:'SUBLIME (Antonyms)',
+    options:['amusing','ludicrous','hilarious','mean'],
+    answer:2
+   },{
+    q:'ECCENTRICITY (Antonyms)',
+    options:['normalcy','similarity','equality','clarity'],
+    answer:1
+   },{
+    q:'GENTLEMAN (Antonyms)',
+    options:['clown','boor','dud','buffoon'],
+    answer:2
+   },{
+    q:'PANICKY (Antonyms)',
+    options:['confident','sober','quiet ','calm'],
+    answer:4
+   },{
+    q:'MOURNFUL (Antonyms)',
+    options:['playful','joyous','laughable','humorous'],
+    answer:2
+   },{
+    q:'OBSTINATE (Antonyms)',
+    options:['confused','determined','trusted','flexible'],
+    answer:4
+   },{
+    q:'MYOPIC (Antonyms)',
+    options:['short-sighted','feeble-minded','fore-sighted','far-sighted'],
+    answer:4
+   },{
+    q:'PRUDENT (Antonyms)',
+    options:['silly','unwise','idiotic','poor'],
+    answer:2
+   },{
+    q:'CONCISE (Antonyms)',
+    options:['extended','lengthy','protracted','elongated'],
+    answer:2
+   },{
+    q:'AFFIRMATION (Antonyms)',
+    options:['denial','refusal','opposition','obstruction'],
+    answer:1
+   },{
+    q:'CURTAIL (Antonyms)',
+    options:['arrive','continue','resume','start'],
+    answer:3
+   },{
+    q:'AFFLUENCE (Antonyms)',
+    options:['misery','stagnation','neglect','poverty'],
+    answer:4
+   },{
+    q:'AGREEMENT (Antonyms)',
+    options:['dislocation','discord','turbulence','fragmentation'],
+    answer:2
+   },{
+    q:'AGONY (Antonyms)',
+    options:['pleasure','laughter','bliss','ecstasy'],
+    answer:1
+   },{
+    q:'RETICENT (Antonyms)',
+    options:['forward','developed','sophisticated','communicative'],
+    answer:4
+   },{
+    q:'PRECISE (Antonyms)',
+    options:['indecent',' vague','incorrect','indistinct'],
+    answer:2
+   },{
+    q:'CANDID (Antonyms)',
+    options:['cunning','diplomatic','doubtful','impertinent'],
+    answer:1
+   },{
+    q:'APOCRYPHAL (Antonyms)',
+    options:['authentic','dubious','unsubstantiated','fictitious'],
+    answer:1
+   },{
+    q:'REPEL (Antonyms)',
+    options:['attend','concentrate','continue','attract'],
+    answer:4
+   },{
+    q:'APALLING (Antonyms)',
+    options:['shocking','consoling','scaring','horrifying'],
+    answer:2
+   },{
+    q:'JEST (Antonyms)',
+    options:['gravity','grim','genial','sport'],
+    answer:1
+   },{
+    q:'CURTAIL (Antonyms)',
+    options:['lengthen','shorten','entail',' close'],
+    answer:1
+   },{
+    q:'APPLAUD (Antonyms)',
+    options:['praise','loud','censure','acclaim'],
+    answer:3
+   },{
+    q:'JADE (Antonyms)',
+    options:['defend','grasp','cheer','harass'],
+    answer:3
+   },{
+    q:'APPRECIATION (Antonyms)',
+    options:['appraisal','antipathy','admiration','assessment'],
+    answer:2
+   },{
+    q:'PACIFY (Antonyms)',
+    options:['threaten','challenge','quarrel',' enrage'],
+    answer:4
+   },{
+    q:'APPARENT (Antonyms)',
+    options:['ambiguous','clear','visible','conspicuous'],
+    answer:1
+   },{
+    q:'ATHEIST (Antonyms)',
+    options:['rationalist','theologist','believer','ritualist'],
+    answer:3
+   },{
+    q:'GIGANTIC (Antonyms)',
+    options:['weak','fragile','slight','tiny'],
+    answer:4
+   },{
+    q:'ILLICIT (Antonyms)',
+    options:['liberal','intelligent','lawful','clear'],
+    answer:3
+   },{
+    q:'CALLOUS (Antonyms)',
+    options:['sensitive','soft','kind','generous'],
+    answer:1
+   },{
+    q:'ENIGMATIC (Antonyms)',
+    options:['simple','reticent','plain','nervous'],
+    answer:4
+   },{
+    q:'ABUNDANT (Antonyms)',
+    options:['short','limited','petty','meagre'],
+    answer:4
+   },{
+    q:'HARASS (Antonyms)',
+    options:['reward','praise','flatter','relieve'],
+    answer:4
+   },{
+    q:'CHARMING (Antonyms)',
+    options:['insolent','indignant','repulsive','handicapped'],
+    answer:3
+   },{
+    q:'GRUESOME (Antonyms)',
+    options:['attractive','beneficial','gracious','amicable'],
+    answer:3
+   },{
+    q:'DESPISE (Antonyms)',
+    options:['appease','flatter','admire','appreciate'],
+    answer:3
+   },{
+    q:'CUMBERSOME (Antonyms)',
+    options:['heavy','convenient','smooth','automatic'],
+    answer:2
+   },{
+    q:'LOQUACIOUS (Antonyms)',
+    options:['talkative','taciturn','diffident','bashful'],
+    answer:2
+   },{
+    q:'INTELLIGIBLE (Antonyms)',
+    options:['dull ','foolish','garbled','confused'],
+    answer:4
+   },{
+    q:'PHILANTHROPIST (Antonyms)',
+    options:['philistine','moralist','spendthrift','miser'],
+    answer:4
+   },{
+    q:'ANXIOUS (Antonyms)',
+    options:['fearful','worried','calm','concerned'],
+    answer:3
+   },{
+    q:'ABUNDANCE (Antonyms)',
+    options:['poverty',' wretchedness','scarcity','famine'],
+    answer:3
+   },{
+    q:'MIGRATE (Antonyms)',
+    options:['return','rehabilitate','transfer','settle'],
+    answer:1
+   },{
+    q:'CONVICTED (Antonyms)',
+    options:['acquitted','pardoned','exempted','liberated'],
+    answer:1
+   },{
+    q:'CURTAIL (Antonyms)',
+    options:['detail','enlarge','promote','exaggerate'],
+    answer:2
+   },{
+    q:'ARID (Antonyms)',
+    options:['cloudy','juicy','marshy','wet'],
+    answer:4
+   },{
+    q:'INSOLENT (Antonyms)',
+    options:['arrogant','humble','ashamed','ignorant'],
+    answer:2
+   },{
+    q:'CURSORY (Antonyms)',
+    options:['final ','thorough','impulsive','customary'],
+    answer:2
+   },{
+    q:'LACKADAISICAL (Antonyms)',
+    options:['enthusiastic','intelligent','classical','irresponsible'],
+    answer:1
+   },{
+    q:'SUBLIME (Antonyms)',
+    options:['inferior','deficit','ridiculous','crooked'],
+    answer:1
+   },{
+    q:'EVIDENT (Antonyms)',
+    options:['definite','careless','clear','obscure'],
+    answer:4
+   },{
+    q:'EPHEMERAL (Antonyms)',
+    options:['eternal','transitory','mortal','temporal'],
+    answer:1
+   },{
+    q:'LATENT (Antonyms)',
+    options:['unspoken','later','implicit','obvious'],
+    answer:4
+   },{
+    q:'MONOTONOUS (Antonyms)',
+    options:['disastrous','terrifying','terrible','interesting'],
+    answer:4
+   },{
+    q:'OBSCENE (Antonyms)',
+    options:['disobedient','decent','dislocate','cautious'],
+    answer:2
+   },{
+    q:'FLOURISH (Antonyms)',
+    options:['perish','degenerate','decay','dismiss'],
+    answer:2
+   },{
+    q:'CONFORM (Antonyms)',
+    options:['differ','reject','question','ignore'],
+    answer:1
+   },{
+    q:'SUMMIT (Antonyms)',
+    options:['end ','last','base ','bottom'],
+    answer:4
+   },{
+    q:'OBSCURE (Antonyms)',
+    options:['clear','bright','open ','frank'],
+    answer:1
+   },{
+    q:'ELEGANT (Antonyms)',
+    options:['crude','efficient','coy',' eloquent'],
+    answer:1
+   },{
+    q:'DELUSION (Antonyms)',
+    options:['reality','acceptance','precision','fiction'],
+    answer:1
+   },{
+    q:' DESPAIR (Antonyms)',
+    options:['belief','trust','hope','faith'],
+    answer:3
+   },{
+    q:' IN TOTO (Antonyms)',
+    options:['bluntly','partially','entirely','strongly'],
+    answer:2
+   },{
+    q:'PROTEAN (Antonyms)',
+    options:['amateur','catholic','unchanging','rapid'],
+    answer:3
+   },{
+    q:'PREDILECTION (Antonyms)',
+    options:['acceptance','attraction','dislike','choice'],
+    answer:3
+   },{
+    q:'ADMONISH (Antonyms)',
+    options:['condemn','bless','praise','congratulate'],
+    answer:3
+   },{
+    q:'APPARENT (Antonyms)',
+    options:['illegible','hidden','mysterious','remote'],
+    answer:2
+   },{
+    q:'ALIEN (Antonyms)',
+    options:['native','domiciled','natural','resident'],
+    answer:1
+   },{
+    q:'FUTILE (Antonyms)',
+    options:['upright','costly','eminent','worthy'],
+    answer:4
+   },{
+    q:'AUDACIOUS (Antonyms)',
+    options:['meek','cowardly','mild ','gentle'],
+    answer:2
+   },{
+    q:'ARROGANT (Antonyms)',
+    options:['simple','timid','civilized','modest'],
+    answer:4
+   },{
+    q:'SUPPRESS (Antonyms)',
+    options:['stir up','rouse','urge','incite'],
+    answer:4
+   },{
+    q:'LOOSEN (Antonyms)',
+    options:['fasten','accelerate','delay ','paste'],
+    answer:1
+   },{
+    q:'REBELLION (Antonyms)',
+    options:['forgiveness','retribution','submission','domination'],
+    answer:3
+   },{
+    q:'IDIOSYNCRASY (Antonyms)',
+    options:['insanity','sanity','generality','singularity'],
+    answer:3
+   },{
+    q:'SANGUINE (Antonyms)',
+    options:['diffident','hopeless','cynical','morose'],
+    answer:2
+   },{
+    q:'SOBRIETY (Antonyms)',
+    options:['moderation','drunkenness','dizziness','stupidity'],
+    answer:2
+   },{
+    q:'EXTINCT (Antonyms)',
+    options:['recent','distinct','alive','ancient'],
+    answer:3
+   },{
+    q:'FIENDISH (Antonyms)',
+    options:['diabolical','devilish','angelic','friendly'],
+    answer:4
+   },{
+    q:'SUBSEQUENT (Antonyms)',
+    options:['eventual','succeeding','prior','comparative'],
+    answer:3
+   },{
+    q:'ORTHODOX (Antonyms)',
+    options:['revolutionary','heretical','anarchist','generous'],
+    answer:2
+   },{
+    q:'TAKES OFF (Antonyms)',
+    options:['travels','falls','explodes',' lands'],
+    answer:4
+   },{
+    q:'NIGGARDLY (Antonyms)',
+    options:['hastily','lavishly','likely','gorgeously'],
+    answer:2
+   },{
+    q:'MELODIOUS (Antonyms)',
+    options:['harmonious','tuneless','odious','mellifluous'],
+    answer:2
+   },{
+    q:' ADVANCED (Antonyms)',
+    options:['progressed','outpaced','receded','retarded'],
+    answer:4
+   },{
+    q:'ENLIGHTEN (Antonyms)',
+    options:['slander','bemoan','darken','befog'],
+    answer:4
+   },{
+    q:'EXCEPTIONAL (Antonyms)',
+    options:['great ','occasional','common','absorbing'],
+    answer:3
+   },{
+    q:'ZEAL (Antonyms)',
+    options:['disinterest','apathy','carelessness','hatred'],
+    answer:2
+   },{
+    q:'DESECRATION (Antonyms)',
+    options:['consecration','discouragement',' despondency','expectation'],
+    answer:1
+   },{
+    q:'SHIMMERING (Antonyms)',
+    options:[' gloomy','glimmering','refreshing','repining'],
+    answer:1
+   },{
+    q:'FAR-FETCHED (Antonyms)',
+    options:['wise ','prudent','familiar','realistic'],
+    answer:4
+   },{
+    q:'FLORID (Antonyms)',
+    options:['weak','pale','monotonous','ugly'],
+    answer:2
+   },{
+    q:'VERITY (Antonyms)',
+    options:['sanctity','reverence','falsehood','rarity'],
+    answer:3
+   },{
+    q:'PERSPICUITY (Antonyms)',
+    options:['vagueness','dullness','unfairness','unwillingness'],
+    answer:1
+   },{
+    q:'FERVENT (Antonyms)',
+    options:['inexcitable','enduring','dispassionate','subdued'],
+    answer:3
+   },{
+    q:'MEANDERING (Antonyms)',
+    options:['sliding','sloping','strained',' straight'],
+    answer:4
+   },{
+    q:'JETTISON (Antonyms)',
+    options:['accept','reward','preserve','consent'],
+    answer:1
+   },{
+    q:'AMELIORATE (Antonyms)',
+    options:['improve','depend','soften','worsen'],
+    answer:4
+   },{
+    q:'GROTESQUE (Antonyms)',
+    options:['natural','odd','whimsical','sinful'],
+    answer:1
+   },{
+    q:'DEVIOUS (Antonyms)',
+    options:['straight','obvious','simple','superficial'],
+    answer:4
+   },{
+    q:'EVANESCENT (Antonyms)',
+    options:['imminent','permanent','pervasive','immanent'],
+    answer:2
+   },{
+    q:'AFFLUENT (Antonyms)',
+    options:['famous','insignificant','poor','skilled'],
+    answer:3
+   },{
+    q:'OBSCURE (Antonyms)',
+    options:['vacant','seldom','distinct','unusual'],
+    answer:3
+   },{
+    q:'AMBIGUOUS (Antonyms)',
+    options:['concealed','precise','complete','magnified'],
+    answer:2
+   },{
+    q:'KEEN (Antonyms)',
+    options:['blunt',' foolish','insipid',' plain'],
+    answer:1
+   },{
+    q:'BRAVERY (Antonyms)',
+    options:['savagery','cowardice','cowardice',' heroism'],
+    answer:2
+   },{
+    q:'EXASPERATING (Antonyms)',
+    options:['soothing','successful','annoying','distressing'],
+    answer:1
+   },{
+    q:'EMACIATED (Antonyms)',
+    options:['healthy','luxurious','intelligent','sympathetic'],
+    answer:1
+   },{
+    q:'ABERRATION (Antonyms)',
+    options:['regularity','commonality','particularity',' normality'],
+    answer:4
+   },{
+    q:'AFFABLE (Antonyms)',
+    options:['pleasant','surly','weak',' unknown'],
+    answer:2
+   },{
+    q:'RUEFULLY (Antonyms)',
+    options:['cheerfully','regretfully','thoughtfully','hopefully'],
+    answer:1
+   },{
+    q:'GLOOMY (Antonyms)',
+    options:['radiant','fragrant','melodious','illusory'],
+    answer:1
+   },{
+    q:'BLESSING (Antonyms)',
+    options:[' dull','curse','hurt','harsh'],
+    answer:2
+   },{
+    q:'ACCOMPLISH (Antonyms)',
+    options:['fail',' improper','disagreeable','scatter'],
+    answer:1
+   },{
+    q:'FAMOUS (Antonyms)',
+    options:['obscure','eminent','lenient','fabulous'],
+    answer:1
+   },{
+    q:'ORDERLY (Antonyms)',
+    options:[' unclear','valueless','chaotic','incomplete'],
+    answer:3
+   },{
+    q:'INVINCIBLE (Antonyms)',
+    options:['small','invisible','vulnerable','reachable'],
+    answer:3
+   },{
+    q:'INOFFENSIVE (Antonyms)',
+    options:['sensitive','organic','sensible','rude'],
+    answer:4
+   },{
+    q:'DIVULGE (Antonyms)',
+    options:['conceal','disguise','oppress','reveal'],
+    answer:1
+   },{
+    q:'DISCORD (Antonyms)',
+    options:['harmony','serenit','acceptance','placidity'],
+    answer:1
+   },{
+    q:'MAMMOTH (Antonyms)',
+    options:['quiet ','significant','huge ','small'],
+    answer:3
+   },{
+    q:'LIBERTY (Antonyms)',
+    options:['serenity','slavery','serfdom','subordination'],
+    answer:2
+   },{
+    q:'DISORDERLY (Antonyms)',
+    options:['chaotic','organized','adjusted','arranged'],
+    answer:4
+   },{
+    q:'ELEVATION (Antonyms)',
+    options:['reduction','humiliation','depression','debasement'],
+    answer:3
+   },{
+    q:'GLOSSY (Antonyms)',
+    options:['dull ','shining','weary','tired'],
+    answer:1
+   },{
+    q:'APPROPRIATE (Antonyms)',
+    options:['dissimilar','incomparable','unsuitable','disparate'],
+    answer:3
+   },{
+    q:'ACCORD (Antonyms)',
+    options:['disagreement','welcome','disrespect','conformity'],
+    answer:1
+   },{
+    q:'INFIRMITY (Antonyms)',
+    options:['employment','indisposition','strength','weakness'],
+    answer:3
+   },{
+    q:'FEASIBLE (Antonyms)',
+    options:['useful','impractical','uneven','important'],
+    answer:2
+   },{
+    q:'METICULOUS (Antonyms)',
+    options:['forgetful','destructive','careless','flagrant'],
+    answer:3
+   },{
+    q:'SYNTHETIC (Antonyms)',
+    options:['natural','plastic','cosmetic','apathetic'],
+    answer:1
+   },{
+    q:'AUTONOMOUS (Antonyms)',
+    options:['self-government','dependent','defensive','neutral'],
+    answer:2
+   },{
+    q:'DECEITFUL (Antonyms)',
+    options:['sincere','useful','plain','honest'],
+    answer:3
+   },{
+    q:'EXONERATE (Antonyms)',
+    options:['admit','release','convict','reject'],
+    answer:3
+   },{
+    q:'EXAGGERATE (Antonyms)',
+    options:['underwrite','understate','ignore','condemn'],
+    answer:2
+   },{
+    q:'CONTROVERSIAL (Antonyms)',
+    options:['indisputable','restrained','controlled','appeasing'],
+    answer:1
+   },{
+    q:'BRITTLE (Antonyms)',
+    options:['weak ','strong','fragile','bright'],
+    answer:2
+   },{
+    q:'CALLOUS (Antonyms)',
+    options:['rude','insensitive','indifferent','sympathetic'],
+    answer:4
+   },{
+    q:'DISHEVELLED (Antonyms)',
+    options:['composed','tidy','confident','jovial'],
+    answer:2
+   },{
+    q:'IMPEDE (Antonyms)',
+    options:['obstruct','advance','linger','guarantee'],
+    answer:2
+   },{
+    q:'PERILLOUS (Antonyms)',
+    options:['carefree','impetuous','safe','impure'],
+    answer:3
+   },{
+    q:'EVIDENT (Antonyms)',
+    options:['suspected','disagreed','doubtful','unimportant'],
+    answer:3
+   },{
+    q:'ADAMANT(Antonyms)',
+    options:['yielding','permissive','liberal','tolerant'],
+    answer:1
+   },{
+    q:'PROFESSIONAL(Antonyms)',
+    options:['novice','amateur',' dabbler','apprentice'],
+    answer:2
+   },{
+    q:'CALLOUS (Antonyms)',
+    options:['persuasive','caring','gentle','sensitive'],
+    answer:4
+   },{
+    q:'INCREDIBLE (Antonyms)',
+    options:['credulous','probable','possible','creditable'],
+    answer:3
+   },{
+    q:'DETEST (Antonyms)',
+    options:['test ','dislike','like','interest'],
+    answer:3
+   },{
+    q:'COMMENCE (Antonyms)',
+    options:['start ','schedule','conclude','dissolve'],
+    answer:3
+   },{
+    q:'INTENTIONAL (Antonyms)',
+    options:['accidental','undecided','concentrated','broken'],
+    answer:1
+   },{
+    q:'EXPAND (Antonyms)',
+    options:['contract','contrast','consist','controvert'],
+    answer:1
+   },{
+    q:'PROSPERITY (Antonyms)',
+    options:['propriety','property','adversity','perspicacity'],
+    answer:3
+   }
+   
+   
+   
+   
+   
+   
+   
+   
+  ]
+
+  totalQuestionSpan.innerHTML=10;
+  function load(){
+        questionNumberSpan.innerHTML=index+1;
+         question.innerHTML=questions[questionIndex].q;     
+         op1.innerHTML=questions[questionIndex].options[0];
+         op2.innerHTML=questions[questionIndex].options[1];
+         op3.innerHTML=questions[questionIndex].options[2];
+         op4.innerHTML=questions[questionIndex].options[3];
+         index++;
+  }
+  
+  function check(element){
+   if(element.id==questions[questionIndex].answer){
+    element.classList.add("correct");
+    updateAnswerTracker("correct")
+    score++;
+   // console.log("score:"+score)
+   }
+   else{
+    element.classList.add("wrong");
+    updateAnswerTracker("wrong")
+
+   }
+   disabledOptions()
+  }
+   
+  function disabledOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.add("disabled");
+      if(options[i].id==questions[questionIndex].answer){
+       options[i].classList.add("correct");
+      }
+
+     }
+  }
+  
+  function enableOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.remove("disabled","correct","wrong");
+     }
+  }
+
+  function validate(){
+      if(!options[0].classList.contains("disabled")){
+       // alert("Please Selecto one option")
+	   enableOptions();
+       randomQuestion();
+      }
+      else{
+       enableOptions();
+       randomQuestion();
+      }
+  }
+
+  function next(){
+    validate();
+  }
+   
+  function randomQuestion(){
+   let randomNumber=Math.floor(Math.random()*questions.length);
+   let hitDuplicate=0;
+       if(index==10){
+        quizOver();
+       }
+       else{
+         if(myArray.length>0){
+             for(let i=0; i<myArray.length; i++){
+               if(myArray[i]==randomNumber){
+                  hitDuplicate=1;
+                  break;
+               }
+             }
+             if(hitDuplicate==1){
+              randomQuestion();
+             }
+             else{
+               questionIndex=randomNumber;   
+              load();
+              myArr.push(questionIndex);
+             }
+         }
+         if(myArray.length==0){
+           questionIndex=randomNumber;   
+           load();
+           myArr.push(questionIndex);
+         }
+
+       myArray.push(randomNumber);
+       
+      }
+  }
+      
+  function answerTrakcer(){
+     for(let i=0; i<10; i++){
+      const div=document.createElement("div")
+         answerTrackerContainer.appendChild(div);
+     }
+  }
+
+ function updateAnswerTracker(classNam){
+   answerTrackerContainer.children[index-1].classList.add(classNam);
+ }
+
+ function quizOver(){
+    document.querySelector(".quiz-over").classList.add("show");
+    correctAnswerSpan.innerHTML=score;
+    totalQuestionSpan2.innerHTML=10;
+    percentage.innerHTML=(score/10)*100 + "%";
+ }
+ 
+ function tryAgain(){
+     window.location.reload();
+ }
+
+ window.onload=function(){
+  randomQuestion();
+  answerTrakcer();
+ 
+}
+
+</script>
+
+</body>
+</html>

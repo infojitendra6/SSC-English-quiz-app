@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+ 
+<style>
+body{
+ margin:0;
+  background-image: linear-gradient(to bottom right, red, yellow);
+  font-family: sans-serif;
+}
+
+.question-number,
+.question,
+.options,
+.button,
+.answers-tracker{
+ float: left;
+ width: 100%;
+}
+.question-number h3{
+text-align: center;
+ color:green;
+ border-bottom: 1px solid #ccc;
+ margin:0;
+ padding-bottom:10px;
+}
+.question {
+
+ color:#fff;
+ text-style:bold;
+
+ padding:20px 0;
+ 
+}
+
+.options div{
+  background-color: #cccccc;
+  font-size:16px;
+  color:000000;
+  
+  margin-bottom:10px;
+  border-radius:5px;
+  padding:10px;
+  position: relative;
+  overflow:hidden;
+  cursor: pointer;
+}
+.options div.disabled{
+ pointer-events: none;
+}
+.options div.correct{
+ z-index: 1;
+ color: #fff;
+}
+.options div.correct::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color: green;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+.options div.wrong{
+ z-index: 1;
+ color: #fff;
+}
+.options div.wrong::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color:red;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+
+
+.button .btn{
+ padding:15px 50px;
+ border-radius:5px;
+ cursor: pointer;
+ width: 100%;
+ background-color:green;
+ font-size:16px;
+   justify-content: center;
+  
+ color:#ffffff;
+ border: none;
+ display: inline-block;
+ margin:15px 0 20px;
+}
+
+
+
+.quiz-over{
+ position: fixed;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-image: linear-gradient(to bottom right, red, yellow);
+ z-index: 10;
+ display: none;
+ align-items: center;
+ justify-content: center;
+}
+.quiz-over.show{
+ display: flex;
+}
+.quiz-over .box{
+ background-color: #009688;
+ padding:30px;
+ border-radius:10px;
+ text-align: center;
+ flex-basis: 700px;
+ max-width:700px;
+ color:#ffffff;
+}
+
+.quiz-over .box h1{
+ font-size:36px;
+ margin:0 0 20px;
+}
+
+.quiz-over .box button{
+ padding:15px 50px;
+ border:none;
+ background-color:#FF9800;
+ border-radius:5px;
+ font-size:16px;
+ margin:15px 0 20px;
+ color:#ffffff;
+}
+
+</style>
+</head>
+<body>
+     <div class="quizContainer container-fluid well well-lg">
+    <div class="question-number">
+       <h3><b>Question <span class="question-num-value"></span> of <span class="total-question"></span></b></h3>
+    </div>
+    <div class="question">
+      
+    </div>
+    <div class="options">
+       <div id="1" class="option1" onclick="check(this)"></div>
+       <div id="2" class="option2" onclick="check(this)"></div>
+       <div id="3" class="option3" onclick="check(this)"></div>
+       <div id="4" class="option4" onclick="check(this)"></div>
+    </div>
+    <div class="button">
+       <button type="button" class="btn" onclick="next()">Next</button>
+    </div>
+    <div class="answers-tracker">
+       
+    </div>
+
+ 
+ <div class="quiz-over">
+   <div class="box">
+     <h1>
+       Good Job<br>
+      You Correct! <span class="correct-answers"></span> out of <span class="total-question2"></span>  <br>
+      Your percentage is <span class="percentage"></span>.
+     </h1>
+     <button type="button" onclick="tryAgain()">TryAgain</button>
+   </div>
+ </div>
+</div>
+<script>
+  
+  const options=document.querySelector(".options").children;
+  const answerTrackerContainer=document.querySelector(".answers-tracker");
+  const questionNumberSpan=document.querySelector(".question-num-value");
+  const totalQuestionSpan=document.querySelector(".total-question");
+  const correctAnswerSpan=document.querySelector(".correct-answers");
+  const totalQuestionSpan2=document.querySelector(".total-question2");
+  const percentage=document.querySelector(".percentage");
+  const question=document.querySelector(".question");
+  const op1=document.querySelector(".option1");
+  const op2=document.querySelector(".option2");
+  const op3=document.querySelector(".option3");
+  const op4=document.querySelector(".option4");
+  let questionIndex;
+  let index=0;
+  let myArray=[];
+  let myArr=[];
+  let score=0;
+
+  // questions and options and answers
+
+  const questions=[
+   {
+    q:'For his alleged involvement in espio-nage, he is (under a cloud) these days.',
+    options:['experiencing cloudy weathe','enjoying favourable luck','under suspicion','under observation'],
+    answer:3
+   },
+   {
+    q:'We have appealed to him again and again; there is no use (flogging a dead horse) now.',
+    options:['repeating our request','making him see reason','beating about the bush','wasting time in useless effort'],
+    answer:4
+   },{
+    q:'We shouldn’t (look down upon) the wretched of the earth.',
+    options:['sympathise with','hate intensely','be indifferent to','regard with contempt'],
+    answer:4
+   },{
+    q:'Because of his misbehaviour, he is bound to (face the music).',
+    options:['get finished','get reprimanded','feel sorry','listen to the music'],
+    answer:2
+   },{
+    q:'The working of the factory was distru-pted on account of a (token strike) by the workers',
+    options:['total strike',' carefully planned strike','short strike held as a warning','sudden call of strike'],
+    answer:3
+   },{
+    q:'By opposing his proposal he (fell foul of) him',
+    options:['quarrel with','felt annoyed with','agreed with','got into trouble with'],
+    answer:4
+   },{
+    q:'Those who work (by fits and starts) seldom show good results.',
+    options:['rarely','disinterestedly','irregularly','regularly'],
+    answer:3
+   },{
+    q:'The new manager thought that he would give employees (enough rope) for the first six months after which he would check the work done himself',
+    options:[' many directives and orders','sufficient advice','all the material they needed',' enough freedom for action'],
+    answer:4
+   },{
+    q:'He was (all at sea) when he began his new Job.',
+    options:['happy','sad',' puzzled','triumphant'],
+    answer:3
+   },{
+    q:'The (sweeping statement) by the boss left the conscientious workers disgusted.',
+    options:['rash statement','unpremeditated statement','thoughtless statement','generalised statement'],
+    answer:4
+   },{
+    q:'The failure of crops in successive years put the farmer (in a tight corner)',
+    options:['in a closed room','in a small field',' in a difficult situation','in a meadow'],
+    answer:3
+   },{
+    q:'The effort to trace the culprit was (a wild goose chase).',
+    options:[' fruitful hunting','futile search','ideal seeking','genuine effort'],
+    answer:2
+   },{
+    q:'The story (does not hold water)',
+    options:['does not deserve appreciation','does not fulfil the requirements','cannot be believed','cannot be valued'],
+    answer:3
+   },{
+    q:'Raj couldn’t pay the bill, so he asked the owner to put it (on the cuff)',
+    options:['on credit','against his credit card','in his bank account','in his friend’s account'],
+    answer:1
+   },{
+    q:'His statement is (out and out) a lie.',
+    options:['totally','simply',' merely','slightly'],
+    answer:1
+   },{
+    q:'The luxury car that they bought turned out to be (a white elephant)',
+    options:['a rare article','useful mode of transport',' costly or troublesome possession',' a proud possession'],
+    answer:3
+   },{
+    q:'If you are (fair and square) in your work you will definitely prosper',
+    options:['active','honest','business like','authoritative'],
+    answer:2
+   },{
+    q:'There is (no love lost between) any two neighbouring countries in the world.',
+    options:[' stop loving','not on good terms','forming a group','have good understanding'],
+    answer:2
+   },{
+    q:'The heavy downpour (played havoc) in the coastal area.',
+    options:['caused destruction','caused diseases','caused floods','caused hardship'],
+    answer:1
+   },{
+    q:'To have a (green thumb) means',
+    options:[' one’s nails are painted green','one is artistic',' to have a natural interest in gardening',' one has a green tattoo on the thumb'],
+    answer:3
+   },{
+    q:'When he saw the snake he (took to his heels)',
+    options:['ran away in fear','went slowly','walked in fear','jumped fast'],
+    answer:1
+   },{
+    q:'He has to abide by the (hard and fast) rule of the company.',
+    options:[' flexible','strict','difficult','honest'],
+    answer:2
+   },{
+    q:'She goes to her mother’s house (off and on).',
+    options:['frequently','rarely','occasionally','sometimes'],
+    answer:3
+   },{
+    q:'The robber (murdered, the woman in cold blood) for the sake of the jewels',
+    options:['a murder done without feeling','a murder done in revenge',' a murder done in great anger',' a murder done in enmity'],
+    answer:1
+   },{
+    q:'Indians are (going places) in the field of software technology.',
+    options:['going abroad','going to spaces','talented and successful','friendly and amicable'],
+    answer:3
+   },{
+    q:'The poet (drew on his fancy), not his knowledge of Nature, when he wrote his poem on birds.',
+    options:['used his understanding','used his knowledge','used his imagination','used his skill'],
+    answer:3
+   },{
+    q:'My neighbour had to (pay through his nose) for a brand new car',
+    options:['pay huge loans',' pay a reasonable price','pay an extremely high price',' make a quick buck'],
+    answer:3
+   },{
+    q:'Very ambitious people do not like to (rest on their laurels)',
+    options:['to be unhappy','to be motivated','to be impatient','to be complacent'],
+    answer:4
+   },{
+    q:'If he phones again, I am going (to give him a piece of my mind)',
+    options:['to be nice to him','to take revenge on him','to reprimand him','to support him'],
+    answer:3
+   },{
+    q:'The party high command wanted (to stave off) an open battle.',
+    options:['postpone','wait and see','allow it to take its own course','prevent'],
+    answer:1
+   },{
+    q:'Ramesh (takes after) his father.',
+    options:['follows','imitates','obeys','resembles'],
+    answer:4
+   },{
+    q:'They (made no bones about) acknowledging their debt to his genius.',
+    options:['did not have any hesitation in','did not have any faith in','demanded compensation for','had problems in'],
+    answer:1
+   },{
+    q:'It is evident from the minister’s statement that (heads will roll) in the Secretariat.',
+    options:['transfers will take place','heads will be cut off','people will die','dismissals will occur'],
+    answer:4
+   },{
+    q:'During the last moments of his life, the criminal (made a clean breast of) everything he had done.',
+    options:['showed his breast','fought like a hero','confessed without reserve','faced bravely'],
+    answer:3
+   },{
+    q:'She tries very hard (to keep up) with her rich neighbours.',
+    options:['to imitate','to keep in touch','to avoid','to be on par'],
+    answer:2
+   },{
+    q:'He went on (sowing wild oats); he reaped suffering in his later life.',
+    options:['inviting troubles as a boy','warning others as a youngman',' irresponsible pleasure seeking in young age',' sowing grains called oats when young'],
+    answer:3
+   },{
+    q:'I don’t know why she has become (stand-offish) recently',
+    options:['angry','hilarious','indifferent','unmanageable'],
+    answer:3
+   },{
+    q:'Why don’t you put an end to (blowing your own trumpet) ?',
+    options:[' playing your own trumpet to produce music','making too much noise',' praising your own abilities and achievements','None of these'],
+    answer:3
+   },{
+    q:'I knew he had (an axe to grind) and turned down his offer of help',
+    options:['a blunt axe','a sharp tongue','a private interest to serve','a tendency to fight'],
+    answer:3
+   },{
+    q:'The saint’s life was (an open book).',
+    options:[' an uncomplicated one','one that held no secrets','an example to all','an interesting biography'],
+    answer:2
+   },{
+    q:' (Reading between the lines) I realised that my friend wanted to keep something from me',
+    options:[' looking for meanings that are not actually expressed','reading carelessly','reading with anxiety',' glancing over the lines'],
+    answer:1
+   },{
+    q:'Sometimes, it happens that we have (to give the devil his due)',
+    options:['to give credit to even a notorious person','to give encouragement even to the enemy','to invite the devil','to stand in the way of the devil'],
+    answer:2
+   },{
+    q:'The king had been made (to eat humble pie).',
+    options:['to eat slowly',' to have an excellent dish','to eat a good pie','to apologise'],
+    answer:4
+   },{
+    q:'He was given (Hobson’s choice) by the employer',
+    options:['excellent choice','no real choice at all','choice to live or die',' first choice'],
+    answer:2
+   },{
+    q:'He has a very nice manner, but you would better (take) what he says (with a grain of salt).',
+    options:[' to listen to something with considerable doubt','to talk sensibly','to criticise','to complement'],
+    answer:1
+   },{
+    q:'He didn’t tell me directly, but (reading between the lines). I think he is not happy with them',
+    options:[' reading slowly and haltingly',' understanding the sense rather than the actual words',' understanding the meaning of words and not the sense','reading superficially'],
+    answer:2
+   },{
+    q:'Gopi works (by fits and starts).',
+    options:['consistently',' irregularly','in high spirits','enthusiastically'],
+    answer:2
+   },{
+    q:'I cannot (put up with) your misconduct any longer.',
+    options:['excuse','refuse','accept','tolerate'],
+    answer:4
+   },{
+    q:'I did not mind what he was saying, he was only (talking through his hat).',
+    options:['talking nonsense','talking ignorantly','talking irresponsibly','talking insultingly'],
+    answer:1
+   },{
+    q:'He is so furious that he would (go through fire and water) to revenge himself on his foe',
+    options:['approach everybody for help','avail himself of any opportunity',' use any conceivable method','undergo any risk'],
+    answer:4
+   },{
+    q:'The watchdogs were asleep when the bulls (ran riot).',
+    options:['behaved cleverly','acted without restraint','wandered aimlessly','had the best of time'],
+    answer:2
+   },{
+    q:'In spite of the immense pressure exerted by the militants, the Government, has decided not to (give in).',
+    options:['accede','yield','oblige','conform'],
+    answer:2
+   },{
+    q:'The young and the old sat (cheek by jowl) in the large audience',
+    options:['very near','very far','tongue tied','irritated'],
+    answer:1
+   },{
+    q:'We wanted to keep the gift as a surprise for mother but my sister (gave the game away).',
+    options:['lost the game','gave out the secret','played badly','withdrew from the game'],
+    answer:2
+   },{
+    q:'I don’t think the law will interfere with us as we are just trying to (turn an honest penny).',
+    options:['make a legitimate living','make a good living','have dealings in white money','become more honest'],
+    answer:1
+   },{
+    q:'a dark horse',
+    options:[' an unforeseen competitor','a black horse',' a nightmare','an unknown person'],
+    answer:1
+   },{
+    q:'to run across',
+    options:[' to have an appointed meeting','to meet by chance','to run in the playground','to run very fast'],
+    answer:2
+   },{
+    q:'to get one’s own back',
+    options:[' to get one’s revenge','to get control over someone','to get one’s position back','to get hold of someone'],
+    answer:1
+   },{
+    q:'to steer clear of',
+    options:['drive carefully','avoid','explain clearly','escape'],
+    answer:2
+   },{
+    q:'to beat a retreat',
+    options:['to withdraw in defeat or humiliation','to withdraw after scoring a victory','to march back after a ceremonious parade','to run away in fear'],
+    answer:4
+   },{
+    q:'to blaze a trail',
+    options:['to lead the way as a pioneer','to light a track','to set up a fire','to wear a blazer while running'],
+    answer:1
+   },{
+    q:'red-letter day',
+    options:[' a colourful day','fatal day','happy and significant day','hapless day'],
+    answer:3
+   },{
+    q:' have the last laugh',
+    options:['be of a cheerful nature','laugh only after understanding something',' to be victorious at the end of an argument','to crack the final joke'],
+    answer:3
+   },{
+    q:' turn a deaf ear',
+    options:['disregard','defy','disobey','dismiss'],
+    answer:1
+   },{
+    q:'to smell a rat',
+    options:['to experience bad smell','to misunderstand',' to see a hidden meaning','to suspect a trick'],
+    answer:4
+   },{
+    q:'A few days before his death, he (made a clean breast of) everything.',
+    options:[' confessed','took off his shirt','suffered','spoke ill'],
+    answer:1
+   },{
+    q:'I am (done for)',
+    options:['ruined','rewarded','answered','questioned'],
+    answer:1
+   },{
+    q:'For a healthy and lasting friendship one must be (on the level).',
+    options:['equally rich','mentally compatible','honest and sincere','ready for sacrifices'],
+    answer:3
+   },{
+    q:'The foolish young man soon (made ducks and drakes of) the vast property his father left him.',
+    options:['squandered','distributed','spent','gave in charity'],
+    answer:1
+   },{
+    q:'All his ventures (went to the winds).',
+    options:[' dissipated','spread all over','got speed of the winds','became well-known'],
+    answer:1
+   },{
+    q:'to take someone to task',
+    options:['to scold someone','to assign work to someone',' to take someone to his place of work',' to praise someone for the work done'],
+    answer:1
+   },{
+    q:'to face the music',
+    options:[' to be greeted rudely','to be offered warm hospitality','to enjoy a music programme','to bear the consequences'],
+    answer:4
+   },{
+    q:' to blow one’s own trumpet',
+    options:[' to play on one’s own trumpet','to praise one’s own self','to create noisy disturbances',' to have a high-pitched voice'],
+    answer:2
+   },{
+    q:'to run one down',
+    options:['to be in a hurry','to be weak and tired','to disparage someone','to run down a lane'],
+    answer:3
+   },{
+    q:'at snail’s pace',
+    options:['very slowly',' to walk like a snail','to lack interest in work','in methodical manner'],
+    answer:1
+   },{
+    q:'to turn a deaf ear',
+    options:['to be hard of hearing','to be indifferent','to be attentive','to be obstinate'],
+    answer:2
+   },{
+    q:' to take to one’s heels',
+    options:['to run off','to show one’s heels','to turn around','to walk leisurely'],
+    answer:1
+   },{
+    q:'to have something up one’s sleeves',
+    options:['having a practical plan','having an important project','having an ambitious plan','having a secret plan'],
+    answer:4
+   },{
+    q:' to end in smoke',
+    options:['to have a smoking session','to be on fire','to come to nothing','to burn slowly'],
+    answer:3
+   },{
+    q:'As the bomb exploded people ran (helter-skelter)',
+    options:['in great fear','in disorderly haste','in haste',' in great sorrow'],
+    answer:2
+   },{
+    q:'He was progressing by (leaps and bounds) because of his hard work',
+    options:['rapidly','slowly','peacefully','strongly'],
+    answer:1
+   },{
+    q:'Our founder had done a (Herculean task) by constructing this great educational institution',
+    options:['a work of no worth','an effortless job','a work requiring very great effort','a work requiring very great intelligence'],
+    answer:3
+   },{
+    q:'My close friend (got the sack) from his first job recently',
+    options:['resigned','got rid of','was demoted from','was dismissed from'],
+    answer:4
+   },{
+    q:'I can no longer (put up with) her insolence',
+    options:['endure','evade','suppress','assume'],
+    answer:1
+   },{
+    q:'She is (a fair-weather friend).',
+    options:['a good friend','a friend who meets difficulties calmly',' a friend who deserts you in difficulties',' a favourable friend'],
+    answer:3
+   },{
+    q:'(to die in harness) means to die while',
+    options:['riding a horse','in a stable','in a uniform','still in servic'],
+    answer:4
+   },{
+    q:'(to keep under wraps) means to keep something',
+    options:['covered','protected','unpacked','secret'],
+    answer:4
+   },{
+    q:'After independence Indian agriculture rose (like a phoenix) due to the Green Revolution.',
+    options:['with a new life','with a start','with royal gait','with vengeance'],
+    answer:1
+   },{
+    q:'His failure at the election has been (a sore point with) him for a long time',
+    options:['something which hurts','something that brings fear to','something memorable for',' something pleasurable to'],
+    answer:1
+   },{
+    q:'The student is (on the verge of) breakdown.',
+    options:['on the brink of','at the outset of','in the midst of','at the risk of'],
+    answer:1
+   },{
+    q:'My repeated attempts to get refund from the civic authorities were (of no avail).',
+    options:['unsuccessful','postponed','useless','delayed'],
+    answer:3
+   },{
+    q:'He was progressing by (leaps and bounds) because of his hardwork.',
+    options:['rapidly','slowly','peacefully','strongly'],
+    answer:1
+   },{
+    q:'to emerge (out of thin air) means to',
+    options:[' appear suddenly','descend gradually','fall down quickly','enter from space'],
+    answer:1
+   },{
+    q:'The news of the accident came as (a bolt from the blue)',
+    options:['something unexpected','something unpleasant','something horrible','something unexpected and unpleasant'],
+    answer:4
+   },{
+    q:'The story of the train accident as narrated by one of the survivors (made my flesh creep)',
+    options:['thrilled me','horrified me','excited me','frightened me'],
+    answer:2
+   },{
+    q:'He has resigned his job and (burnt his boats) so far as government service is concerned.',
+    options:['felt dejected','blasted his hopes','ruined himself','left no means of retreat'],
+    answer:4
+   },{
+    q:'He (cannot hold a candle) to his elder brother.',
+    options:['equal to','not as clever as','cannot be compared to','duller than'],
+    answer:3
+   },{
+    q:'The question of higher membership fees was (brought up) at the last meeting.',
+    options:['discussed at great length','introduced for discussion','criticised vehemently','vaguely referred to'],
+    answer:2
+   },{
+    q:'His arguments (cut no ice with me)',
+    options:[' had no influence on me','did not hurt me','did not benefit me','did not make me proud'],
+    answer:1
+   },{
+    q:'the (green-eyed monster) strikes a woman the moment she sees her husband talking to another pretty woman',
+    options:['ange','hatred','envy','jealousy'],
+    answer:4
+   },{
+    q:' to fight tooth and nail',
+    options:['to fight a losing battle','to oppose resolutely','to have a physical fight','to lodge a formal protest'],
+    answer:1
+   },{
+    q:'at one’s wit’s end',
+    options:['to understand thoroughly','to be puzzled','to be a stupid person','to behave irrationally'],
+    answer:2
+   },{
+    q:'The clerk (turned a deaf ear) to his officer’s advice',
+    options:['disputed','paid attention to','disregarded','acknowledged gratefully'],
+    answer:3
+   },{
+    q:'He expects his subordinates (to be always at his beck and call)',
+    options:['at rest','at work','at his disposal','at their desks'],
+    answer:3
+   },{
+    q:'in the long run',
+    options:['permanently','universally','occasionally','ultimately'],
+    answer:4
+   },{
+    q:'If you are (in the good books) of the boss, you are sure to rise quickly.',
+    options:['work well for the boss','praise the boss','in favour with the boss','co-operate with boss'],
+    answer:3
+   },{
+    q:'The population of our country is increasing (by leaps and bounds).',
+    options:['very slowly','very quickly','irregularly','very systematically'],
+    answer:2
+   },{
+    q:'to weigh up (the pros and cons) is to',
+    options:[' measure the ingredient','observe etiquette','consider all facts','postpone action'],
+    answer:3
+   },{
+    q:'My close friend (got the sack) from his first job recently.',
+    options:['resigned','got rid of','was demoted from','was dismissed from'],
+    answer:4
+   },{
+    q:'There is (no love lost between) any two neighbouring countries in the world.',
+    options:['stop loving','not on good terms','forming a group','have good understanding'],
+    answer:2
+   },{
+    q:' He is accused of (sitting on the fence).',
+    options:['observing the scene','resting on fence','hesitating which side to take','sitting back and enjoying the fun'],
+    answer:3
+   },{
+    q:'You have to (read between the lines) to understand most of the symbolic writing',
+    options:['read again and again','understand the hidden meaning','know the symbols','look for many meanings'],
+    answer:2
+   },{
+    q:'The ruling party has been warned not (to play to the gallery).',
+    options:[' to give importance to the common man',' to try to be clever',' to seek to win approval','to side-track the issue'],
+    answer:3
+   },{
+    q:'In the securities scam, the national credibility was (at stake)',
+    options:['on trial','under pressure','in danger','challenged'],
+    answer:3
+   },{
+    q:'The passing of anti-defection law (struck a chill to the heart) of every opportunistic legislator.',
+    options:['caused anger','caused relief','aroused fear','awakened bitterness'],
+    answer:3
+   },{
+    q:'Our house is (within a stone’s throw) from the Red Building',
+    options:['far off','far away','very near to',' beside'],
+    answer:3
+   },{
+    q:'He has a (bone to pick) with his cousin.',
+    options:['reasonable agreement','cause of quarrel','cause of doubt',' difference of opinion'],
+    answer:2
+   },{
+    q:'The day I graduated was (a redletter day) for me.',
+    options:[' a dangerous day','an important day','an eventful day','a formidable day'],
+    answer:2
+   },{
+    q:'Many young artists were (dropping names) at the party to impress the gathering.',
+    options:[' talking proudly about their family members','using pet names',' hinting at high connections','talking informally'],
+    answer:3
+   },{
+    q:'The teacher announced that she had no (blue-eyed boys) in the class.',
+    options:['royal children','young boys','foreigners','favourites'],
+    answer:4
+   },{
+    q:'The company has (run into) a lot of debts.',
+    options:['incurred','settled','opened up','avoided'],
+    answer:1
+   },{
+    q:'He was confident that all his present sufferings will soon (blow over).',
+    options:['increase','pass off','be looked into','be taken care of'],
+    answer:2
+   },{
+    q:'The teacher advised the students (to take into account) the advice given by the elders.',
+    options:['to obey','to neglect','to consider','to reject'],
+    answer:3
+   },{
+    q:'The lawyer asked his assistant to collect the details regarding the (pros and cons) of the case.',
+    options:[' ups and downs','in and out','weak and strong','for and against'],
+    answer:4
+   },{
+    q:'The principal has (to carry out) the orders issued by the higher authorities',
+    options:['obey','communicate',' execute','modify'],
+    answer:3
+   },{
+    q:'The young engineer was hauled up for (spilling the beans) about the new project to the competitor',
+    options:['suppressing the information','hiding the details','revealing the information indiscreetly','spoiling the plans'],
+    answer:3
+   },{
+    q:'The Government claims that Indian industry is progressing (by leaps and bounds).',
+    options:['intermittently','leisurely','at a rapid pace','at a desired pace'],
+    answer:3
+   },{
+    q:'(Laying off) of thousands of workers is inevitable under the new economic policy',
+    options:['dismissal from jobs of','offering new jobs to',' reduction of workers’ wages of','sending on leave'],
+    answer:1
+   },{
+    q:'“I (take thee at thy word)”, said Romeo to Juliet.',
+    options:['listen to you carefully','do not believe you','feel angry with you','truly believe you'],
+    answer:4
+   },{
+    q:'People who do not (lay out) their money carefully, soon come to grief',
+    options:['earn','spend','distribute','preserve'],
+    answer:2
+   },{
+    q:'Having bought the house, they decided (to go the whole hog) and buy all the furniture needed.',
+    options:['to live there','to do it completely','to do it completely','to go in the fog'],
+    answer:2
+   },{
+    q:'There is a lot of (bad blood) between them.',
+    options:['jealousy','fight','angry feeling','distrust'],
+    answer:3
+   },{
+    q:'The village headman pretends to be (a good samaritan).',
+    options:['a religious person','a helpful person','a citizen of Samaria','a law-abiding citizen'],
+    answer:2
+   },{
+    q:'The beleaguered politician was anxious to (set the record straight).',
+    options:['give a speech','win party support','give a correct account','make a confession'],
+    answer:3
+   },{
+    q:' fits and starts',
+    options:['slowly','not regularly','continuously','quickly'],
+    answer:2
+   },{
+    q:'When the Inspector entered the class some of the students (shook in their shoes).',
+    options:['stamped the ground with their shoes','showed signs of anger','trembled with fear','stood up to salute'],
+    answer:3
+   },{
+    q:'in high spirits',
+    options:['full of hope and enthusiasm','under tremendous stress',' under the influence of liquor','mentally deranged'],
+    answer:1
+   },{
+    q:' He amassed his wealth through (sharp practices)',
+    options:['dishonest means','illegal means','intelligent decisions','quick decisions'],
+    answer:1
+   },{
+    q:'He is not (in the good books) of his boss',
+    options:['a lover of good books','in favour with','not of the same opinion as','as good as'],
+    answer:2
+   },{
+    q:'The officer is (fed up) with the complaints made against the clerk.',
+    options:['annoyed','disgusted','pleased','satisfied'],
+    answer:1
+   },{
+    q:'a white elephant',
+    options:[' a rare species of elephants','an expensive gift','a costly but useless possession',' a worthless thing'],
+    answer:3
+   },{
+    q:'ins and outs',
+    options:['entry and exit points','full details','tactical moves','complexity of character'],
+    answer:2
+   },{
+    q:'All his ventures (went to the winds).',
+    options:['dissipated','spread all over','got speed of the winds','became well-known'],
+    answer:1
+   },{
+    q:'Don’t worry about the silly row. It was just a (storm in a tea cup).',
+    options:[' important matter dealt with ease',' hot tea being served','commotion over a trivial matter','confusion and chaos'],
+    answer:3
+   },{
+    q:'The Rajput warriors (set their face against) the invader',
+    options:['became enemies','turned away from','faced difficulty','opposed strongly'],
+    answer:4
+   },{
+    q:'Syria is now (currying favour with) America.',
+    options:['pleasing','favouring','obliging','ingratiating itself with'],
+    answer:4
+   },{
+    q:'Our Principal is not a man (to mince matters).',
+    options:[' to confuse issues','to say something mildly','to mix everything together','to be very modest'],
+    answer:1
+   },{
+    q:'We tend to (take for granted) the conveniences of modern life.',
+    options:['to consider','to admit','to accept readily','to care for'],
+    answer:3
+   },{
+    q:'The prodigal son was left (high and dry) by his friends, when he lost all his money',
+    options:['wounded','alone','depressed','neglected'],
+    answer:4
+   },{
+    q:'The success of his first novel completely (turned his head).',
+    options:['made him vain','made him look back','changed him completely','made him think'],
+    answer:3
+   },{
+    q:'She (turns up her nose at) this kind of dress',
+    options:['despises','loves','sees no harm in','can just tolerate'],
+    answer:1
+   },{
+    q:'At last the rioters (fell back).',
+    options:['fell on the ground','yielded','ran back','turned back'],
+    answer:4
+   },{
+    q:'The Madagascar Coup attempt (ended in a fiasco)',
+    options:['had no effect','was an utter failure','resulted in blood-shed','was a disaster'],
+    answer:2
+   },{
+    q:'His parents (cut him off, without a shilling).',
+    options:['disinherited him','snubbed him','gave him only a shilling','sent him away with a shilling'],
+    answer:1
+   },{
+    q:'The carefully worked–out (planfell through) because of an unexpected event',
+    options:['came out successfully','had a steep fall',' was shattered','failed'],
+    answer:4
+   },{
+    q:'He has (too many irons in the fire).',
+    options:['is engaged in too many enterprises at the same time','has several problems','has many ideas in his head',' has a fire burning constantly in his house'],
+    answer:1
+   },{
+    q:'We wanted to give Rita a surprise party but John (let the cat out of the bag).',
+    options:['spoilt the party with a cat',' gave her a party himself','told her about it unintentionally','prevented her from attending it'],
+    answer:3
+   },{
+    q:'Why should you (read between the lines) whenever I say this to you?',
+    options:[' read the lines with great speed','interpret the lines wrongly',' find more meaning than the words appear to express',' read a text line-by-line slowly'],
+    answer:3
+   },{
+    q:'The Earl of Leicester (threw down the glove).',
+    options:[' accepted defeat','rejected the prize',' resorted to wrong tactics','gave a challenge'],
+    answer:4
+   },{
+    q:'Ravi (fought to the bitter end).',
+    options:['fought to the last point of enemy’s position','died fighting','carried on a contest regardless of the consequences','fought a losing battle'],
+    answer:3
+   },{
+    q:' I joined college late and found it difficult (to catch up with) other students',
+    options:['to compete with',' to come to their level','to overtake them','to hold them and stop'],
+    answer:2
+   },{
+    q:'It is high time he (came out of his shell).',
+    options:['appeared suddenly','became more sociable','became a loser','removed his clothes'],
+    answer:2
+   },{
+    q:'Every political party is at present (playing to the gallery)',
+    options:['adopting cheap tactics',' befooling the common man','fighting for votes','appeasing the masses'],
+    answer:4
+   },{
+    q:'(His blood ran cold) when he heard his uncle was murdered.',
+    options:['He was frightened','He was horrified','He was disgusted','He was depressed'],
+    answer:1
+   },{
+    q:'This is so simple that even a (man in the street) can understand it',
+    options:['an ordinary person','an illiterate person','an unknown person','a stranger'],
+    answer:1
+   },{
+    q:'When he went to claim insurance for his car, the agent said he (hadn’t a leg to stand on)',
+    options:['had been injured in an accident',' was lame','did not have much hope of getting it','would have to wait for some time'],
+    answer:3
+   },{
+    q:'The angry hockey players (gave vent to their feelings).',
+    options:['to express','to emphasise','to suppress','to dismiss'],
+    answer:1
+   },{
+    q:'I trust you will (bear with) me a few minutes more',
+    options:['have patience with','support','carry the burden for','be in control for'],
+    answer:1
+   },{
+    q:'As usual he is (blowing his own trumpet)',
+    options:['refusing to use anybody else’s trumpet','playing a tune on the trumpet','praising himself','praising himself and others'],
+    answer:3
+   },{
+    q:'When they were surrounded from all sides, the dacoits (laid down their arms)',
+    options:[' put their arms on the ground','fought bravely','surrendered','became nervous'],
+    answer:3
+   },{
+    q:' Helena was (over head and ears) in love with Demetrius',
+    options:['carefully','completely','brilliantly','cautiously'],
+    answer:2
+   },{
+    q:'Gopi works (by fits and starts)',
+    options:['consistently','irregularly','in high spirits','enthusiastically'],
+    answer:2
+   },{
+    q:'Naresh Goyal had (to stand on his feet) very early in his life',
+    options:['to be physically strong',' to be independent','to stand erect','to be successful'],
+    answer:2
+   },{
+    q:'The possession of Jerusalem is (a bone of contention) between Israel and Palestine',
+    options:['a subject of peace','a subject of trade','a subject of dispute','a subject of exports'],
+    answer:3
+   },{
+    q:'My friend (turned a deaf ear) to my tale of loss and refused to help me',
+    options:['paid no heed','went far away','listened carefully',' turned his ear away'],
+    answer:1
+   },{
+    q:' to take to heart',
+    options:['to be encouraged','to grieve over','to like','to hate'],
+    answer:2
+   },{
+    q:'yeoman’s service',
+    options:['medical help','excellent work','social work','hard work'],
+    answer:2
+   },{
+    q:'to face the music',
+    options:[' to enjoy a musical recital',' to bear the consequences','to live in a pleasant atmosphere','to have a difficult time'],
+    answer:2
+   },{
+    q:'to put up with',
+    options:['to accommodate','to adjust','to understand','to tolerate'],
+    answer:4
+   },{
+    q:'to call it a day',
+    options:['to conclude proceedings','to initiate proceedings',' to work through the day','None of the above'],
+    answer:4
+   },{
+    q:'a damp squib',
+    options:['rainy weather','a disappointing result',' a skirt in a laundry','None of the above'],
+    answer:2
+   },{
+    q:' in cold blood',
+    options:['angrily','deliberately','excitedly','slowly'],
+    answer:1
+   },{
+    q:'to take someone for a ride',
+    options:['to give a ride to someone',' to deceive someone','to be indifferent','to disclose a secret'],
+    answer:2
+   },{
+    q:' to move heaven and earth',
+    options:['to cause an earthquake','to try everything possible','to pray to all Gods','to travel in a rocket'],
+    answer:2
+   },{
+    q:'to smell a rat',
+    options:['to smell foul','to see a rat','to chase a rat','to be suspicious'],
+    answer:4
+   },{
+    q:' a bolt from the blue',
+    options:['a delayed event','an inexplicable event','an unexpected event','an unpleasant event'],
+    answer:3
+   },{
+    q:'cold comfort',
+    options:['absurdity','deception','slight satisfaction','foolish proposal'],
+    answer:3
+   },{
+    q:' to be all at sea.',
+    options:['a family voyage','lost and confused','in the middle of the ocean',' a string of islands'],
+    answer:2
+   },{
+    q:'to bite the dust',
+    options:['eat voraciously','have nothing to eat','eat roots','None of the above'],
+    answer:4
+   },{
+    q:' to strain every nerve',
+    options:['to make utmost effort','to feel weak and tired','to be a diligent worker','to be methodical in work'],
+    answer:1
+   },{
+    q:' to flog a dead horse',
+    options:[' to whip a dead horse','to attempt to do the impossible','waste one’s efforts','to take advantage of a weakness'],
+    answer:2
+   },{
+    q:'to show a clean pair of heels',
+    options:['to hide','to escape','to pursue','to follow'],
+    answer:2
+   },{
+    q:' to die in harness',
+    options:['premeditated murder','dying young in an accident','to die while in service','to be taken by surprise'],
+    answer:3
+   }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+  ]
+
+  totalQuestionSpan.innerHTML=10;
+  function load(){
+        questionNumberSpan.innerHTML=index+1;
+         question.innerHTML=questions[questionIndex].q;     
+         op1.innerHTML=questions[questionIndex].options[0];
+         op2.innerHTML=questions[questionIndex].options[1];
+         op3.innerHTML=questions[questionIndex].options[2];
+         op4.innerHTML=questions[questionIndex].options[3];
+         index++;
+  }
+  
+  function check(element){
+   if(element.id==questions[questionIndex].answer){
+    element.classList.add("correct");
+    updateAnswerTracker("correct")
+    score++;
+   // console.log("score:"+score)
+   }
+   else{
+    element.classList.add("wrong");
+    updateAnswerTracker("wrong")
+
+   }
+   disabledOptions()
+  }
+   
+  function disabledOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.add("disabled");
+      if(options[i].id==questions[questionIndex].answer){
+       options[i].classList.add("correct");
+      }
+
+     }
+  }
+  
+  function enableOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.remove("disabled","correct","wrong");
+     }
+  }
+
+  function validate(){
+      if(!options[0].classList.contains("disabled")){
+       // alert("Please Selecto one option")
+	   enableOptions();
+       randomQuestion();
+      }
+      else{
+       enableOptions();
+       randomQuestion();
+      }
+  }
+
+  function next(){
+    validate();
+  }
+   
+  function randomQuestion(){
+   let randomNumber=Math.floor(Math.random()*questions.length);
+   let hitDuplicate=0;
+       if(index==10){
+        quizOver();
+       }
+       else{
+         if(myArray.length>0){
+             for(let i=0; i<myArray.length; i++){
+               if(myArray[i]==randomNumber){
+                  hitDuplicate=1;
+                  break;
+               }
+             }
+             if(hitDuplicate==1){
+              randomQuestion();
+             }
+             else{
+               questionIndex=randomNumber;   
+              load();
+              myArr.push(questionIndex);
+             }
+         }
+         if(myArray.length==0){
+           questionIndex=randomNumber;   
+           load();
+           myArr.push(questionIndex);
+         }
+
+       myArray.push(randomNumber);
+       
+      }
+  }
+      
+  function answerTrakcer(){
+     for(let i=0; i<10; i++){
+      const div=document.createElement("div")
+         answerTrackerContainer.appendChild(div);
+     }
+  }
+
+ function updateAnswerTracker(classNam){
+   answerTrackerContainer.children[index-1].classList.add(classNam);
+ }
+
+ function quizOver(){
+    document.querySelector(".quiz-over").classList.add("show");
+    correctAnswerSpan.innerHTML=score;
+    totalQuestionSpan2.innerHTML=10;
+    percentage.innerHTML=(score/10)*100 + "%";
+ }
+ 
+ function tryAgain(){
+     window.location.reload();
+ }
+
+ window.onload=function(){
+  randomQuestion();
+  answerTrakcer();
+ 
+}
+
+</script>
+
+</body>
+</html>

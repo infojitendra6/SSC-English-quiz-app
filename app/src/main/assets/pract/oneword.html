@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+ 
+<style>
+body{
+ margin:0;
+  background-image: linear-gradient(to bottom right, red, yellow);
+  font-family: sans-serif;
+}
+
+.question-number,
+.question,
+.options,
+.button,
+.answers-tracker{
+ float: left;
+ width: 100%;
+}
+.question-number h3{
+text-align: center;
+ color:green;
+ border-bottom: 1px solid #ccc;
+ margin:0;
+ padding-bottom:10px;
+}
+.question {
+text-align: center;
+ font-size:20px;
+ color:#fff;
+ text-style:bold;
+
+ padding:20px 0;
+ 
+}
+
+.options div{
+  background-color: #cccccc;
+  font-size:16px;
+  color:000000;
+  
+  margin-bottom:10px;
+  border-radius:5px;
+  padding:10px;
+  position: relative;
+  overflow:hidden;
+  cursor: pointer;
+}
+.options div.disabled{
+ pointer-events: none;
+}
+.options div.correct{
+ z-index: 1;
+ color: #fff;
+}
+.options div.correct::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color: green;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+.options div.wrong{
+ z-index: 1;
+ color: #fff;
+}
+.options div.wrong::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color:red;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+
+
+.button .btn{
+ padding:15px 50px;
+ border-radius:5px;
+ cursor: pointer;
+ width: 100%;
+ background-color:green;
+ font-size:16px;
+   justify-content: center;
+  
+ color:#ffffff;
+ border: none;
+ display: inline-block;
+ margin:15px 0 20px;
+}
+
+
+
+.quiz-over{
+ position: fixed;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-image: linear-gradient(to bottom right, red, yellow);
+ z-index: 10;
+ display: none;
+ align-items: center;
+ justify-content: center;
+}
+.quiz-over.show{
+ display: flex;
+}
+.quiz-over .box{
+ background-color: #009688;
+ padding:30px;
+ border-radius:10px;
+ text-align: center;
+ flex-basis: 700px;
+ max-width:700px;
+ color:#ffffff;
+}
+
+.quiz-over .box h1{
+ font-size:36px;
+ margin:0 0 20px;
+}
+
+.quiz-over .box button{
+ padding:15px 50px;
+ border:none;
+ background-color:#FF9800;
+ border-radius:5px;
+ font-size:16px;
+ margin:15px 0 20px;
+ color:#ffffff;
+}
+
+</style>
+</head>
+<body>
+     <div class="quizContainer container-fluid well well-lg">
+    <div class="question-number">
+       <h3><b>Question <span class="question-num-value"></span> of <span class="total-question"></span></b></h3>
+    </div>
+    <div class="question">
+      
+    </div>
+    <div class="options">
+       <div id="1" class="option1" onclick="check(this)"></div>
+       <div id="2" class="option2" onclick="check(this)"></div>
+       <div id="3" class="option3" onclick="check(this)"></div>
+       <div id="4" class="option4" onclick="check(this)"></div>
+    </div>
+    <div class="button">
+       <button type="button" class="btn" onclick="next()">Next</button>
+    </div>
+    <div class="answers-tracker">
+       
+    </div>
+
+ 
+ <div class="quiz-over">
+   <div class="box">
+     <h1>
+       Good Job<br>
+      You Correct! <span class="correct-answers"></span> out of <span class="total-question2"></span>  <br>
+      Your percentage is <span class="percentage"></span>.
+     </h1>
+     <button type="button" onclick="tryAgain()">TryAgain</button>
+   </div>
+ </div>
+</div>
+<script>
+  
+  const options=document.querySelector(".options").children;
+  const answerTrackerContainer=document.querySelector(".answers-tracker");
+  const questionNumberSpan=document.querySelector(".question-num-value");
+  const totalQuestionSpan=document.querySelector(".total-question");
+  const correctAnswerSpan=document.querySelector(".correct-answers");
+  const totalQuestionSpan2=document.querySelector(".total-question2");
+  const percentage=document.querySelector(".percentage");
+  const question=document.querySelector(".question");
+  const op1=document.querySelector(".option1");
+  const op2=document.querySelector(".option2");
+  const op3=document.querySelector(".option3");
+  const op4=document.querySelector(".option4");
+  let questionIndex;
+  let index=0;
+  let myArray=[];
+  let myArr=[];
+  let score=0;
+
+  // questions and options and answers
+
+  const questions=[
+   {
+    q:'A person with a long experience of any occupation',
+    options:['veteran','genius','seasoned','ambidexterous'],
+    answer:1
+   },
+   {
+    q:'Words written on a tomb',
+    options:['epithet','epigraph','Soliloquy','epitaph'],
+    answer:4
+   },{
+    q:'Stealthily done',
+    options:['devious','nefarious','surreptitious','villainous'],
+    answer:3
+   },{
+    q:'Something no longer in use',
+    options:['desolate','absolute','obsolete','primitive'],
+    answer:3
+   },{
+    q:' One not concerned with right or wrong',
+    options:['moral','amoral','immoral','immortal'],
+    answer:2
+   },{
+    q:' A person who opposes war or use of military force',
+    options:['fascist','pacifist','narcissist','fatalist'],
+    answer:2
+   },{
+    q:'Severely abusive writing in journals ',
+    options:['imaginary','speculative','scurrilousi','sarcastic'],
+    answer:3
+   },{
+    q:'Call upon God or any other power (like law) etc. for help or protection',
+    options:['invocation','involution','inundation','revocation'],
+    answer:1
+   },{
+    q:' Fear of being enclosed in a small closed space',
+    options:['agoraphobia','claustrophobia','xenophobia','paranoia'],
+    answer:2
+   },{
+    q:'One who has become dependent on something or drugs is',
+    options:['adamant','edict','addict','derelict'],
+    answer:3
+   },{
+    q:'Succession of rulers belonging to one family',
+    options:['dynasty','lineage','ancestry','progeny'],
+    answer:1
+   },{
+    q:'To cut something into two pieces.',
+    options:['severe','sever',' sewer','sow'],
+    answer:2
+   },{
+    q:'Flat metal or Porcelain plate fixed on a wall as an ornament or memorial.',
+    options:['tabloid','poster','board','plaque'],
+    answer:4
+   },{
+    q:'Act of deceiving somebody in order to make money',
+    options:['fraud','robbery','pickpocket','theft'],
+    answer:1
+   },{
+    q:'A short poem or speech addressed to the spectators after the conclusion of a drama.',
+    options:['prologue','dialogue','epilogue',' monologue'],
+    answer:3
+   },{
+    q:'Capable of being understood ineither of two or more possible senses, and therefore not definite.',
+    options:['amphibious','ambiguous',' amorphous','confusing'],
+    answer:2
+   },{
+    q:' A person who is unable to pay his debts',
+    options:['solvent','banker','insolvent','lender'],
+    answer:3
+   },{
+    q:'Anything which is no longer in use',
+    options:['obscure','obsolete','pristine','lapsed'],
+    answer:2
+   },{
+    q:'A person coming to a foreign land to settle there',
+    options:[' immigrant','emigrant','tourist','settler'],
+    answer:1
+   },{
+    q:'Something capable of being done.',
+    options:['probable','feasible','tenable','explicable'],
+    answer:2
+   },{
+    q:'Give and receive mutually',
+    options:['present','reciprocate','compromise','approve'],
+    answer:2
+   },{
+    q:'One who can think about the future with imagination and wisdom.',
+    options:['dreamer','seer','idealist','visionary'],
+    answer:4
+   },{
+    q:'A doctor who treats children',
+    options:['paediatrician','pedagogue','pedestrian','paedophile'],
+    answer:1
+   },{
+    q:'One who studies election trends by means of opinion polls.',
+    options:['entomologist','psephologist','demagogue',' eugenist'],
+    answer:2
+   },{
+    q:'One who believes in offering equal opportunities to women inall spheres.',
+    options:['male chauvinist','feminist','fatalist','futurist'],
+    answer:2
+   },{
+    q:'Killing of a child',
+    options:['homicide','genocide','infanticide','suicide'],
+    answer:3
+   },{
+    q:'The art of good eating',
+    options:['gastronomy','astronomy','vegetarianism',' gourmet'],
+    answer:1
+   },{
+    q:'One who is indifferent to pleasure or pain.',
+    options:['stoic','stylist','cynic','psychic'],
+    answer:1
+   },{
+    q:'Lasting only for a moment',
+    options:['momentous','momentary','trivial','petty'],
+    answer:2
+   },{
+    q:'To seize control of a vehicle in order to force it to go to a new destination, or demand something.',
+    options:['attack','contract','hijack','detour'],
+    answer:3
+   },{
+    q:'One who goes to settle in another country',
+    options:['immigrant','alien','citizen','emigrant'],
+    answer:4
+   },{
+    q:'One who hates mankind',
+    options:['philanthropist','terrorist','misanthrope','misogynist'],
+    answer:3
+   },{
+    q:'Belonging to all parts of the world',
+    options:['versatile','universal','cosmopolitan','secular'],
+    answer:2
+   },{
+    q:'One who walks on ropes',
+    options:['funambulist',' upholsterer','acrobat','aviator'],
+    answer:1
+   },{
+    q:'The study of the origin and history of words',
+    options:[' linguistics','etymology','verbose','anthology'],
+    answer:2
+   },{
+    q:' A person who breaks into a house in order to steal',
+    options:['poacher','bandit',' intruder','burglar'],
+    answer:4
+   },{
+    q:'The study of maps',
+    options:['cartography','geography','geology','atlas'],
+    answer:1
+   },{
+    q:'Tough tissues in joints',
+    options:['ligaments','endoderm','muscles','fibre'],
+    answer:1
+   },{
+    q:'The first model of a new device',
+    options:['prototype','sculpture',' icon','photograph'],
+    answer:1
+   },{
+    q:'A building where an audience sits',
+    options:['aquarium','gymnasium','auditorium','stadium'],
+    answer:3
+   },{
+    q:'That which lasts for a short time',
+    options:['regular','transitory','rotatory','repository'],
+    answer:2
+   },{
+    q:'Ready to believe anything.',
+    options:['credible','incredible','credulous','incredulous'],
+    answer:3
+   },{
+    q:'A four footed animal',
+    options:['tetrapod','quadruped','polyped','double-paired'],
+    answer:2
+   },{
+    q:'A person who believes in the total abolition of war',
+    options:[' socialist','communist','fascist','fascist'],
+    answer:4
+   },{
+    q:'Constant efforts to achieve something',
+    options:['patience','vigour','attempt','perseverance'],
+    answer:4
+   },{
+    q:'One who collects coins',
+    options:[' archaeologist','numismatist','philatelist','connoisseur'],
+    answer:2
+   },{
+    q:'A system of Government in which only one political party is allowed to function',
+    options:['oligarchy','dictatorship','totalitarianism','theocracy'],
+    answer:3
+   },{
+    q:'Customs and habits of a particular group',
+    options:['mores','traditions','rites','rituals'],
+    answer:1
+   },{
+    q:'A body of persons appointed to hear evidence and give their verdict in trials',
+    options:['association','council','bar','jury'],
+    answer:4
+   },{
+    q:'Indifference to pleasure or pain',
+    options:['perseverance','tolerance','stoicism','reticence'],
+    answer:3
+   },{
+    q:'Concluding part of a literary work',
+    options:['epilogue','bibliography','soliloquy','episode'],
+    answer:1
+   },{
+    q:'One who is beyond reform',
+    options:['optimistic','incorrigible','indefatigable','notorious'],
+    answer:2
+   },{
+    q:'Science of diseases',
+    options:[' philology','pathology',' psychology','virology'],
+    answer:2
+   },{
+    q:'One who secretly listens to the talk of others',
+    options:['spy','detective','emissary','eavesdropper'],
+    answer:4
+   },{
+    q:'One who believes in no government and therefore incites disorder in a State',
+    options:['monarchist','anarchist','autocrat ','naxalite'],
+    answer:2
+   },{
+    q:'A mild or indirect expression substituted for an offensive or harsh one',
+    options:['euphemism','truism','favouritism','altruism'],
+    answer:1
+   },{
+    q:'The murder of parent or a near relative',
+    options:['patricide','parricide','matricide','homicide'],
+    answer:2
+   },{
+    q:'Animals who live in herds',
+    options:['sociable','gregarious','carnivorous','social'],
+    answer:2
+   },{
+    q:'A broad road bordered with trees',
+    options:['boudoir','boulevard','avenue','facade'],
+    answer:2
+   },{
+    q:'Violation of something holy or sacred',
+    options:[' profanity','sedition','sacrilege','slander'],
+    answer:3
+   },{
+    q:'Simple, fast-spreading plant without flowers or leaves, which can often cause disease',
+    options:['bacteria','amoeba','virus','fungus'],
+    answer:4
+   },{
+    q:' One who is greedy',
+    options:['voracious','avaricious','carnivorous','omnivorous'],
+    answer:1
+   },{
+    q:'An area of land that is controlled by a ruler',
+    options:['colony','dominion','country','municipality'],
+    answer:1
+   },{
+    q:'A place where Jews worship according to their religion',
+    options:['cathedral ','synagogue','chape','demagogue'],
+    answer:2
+   },{
+    q:'One who is indifferent to pleasure and pain',
+    options:['ascetic','esoteric','stoic','sceptical'],
+    answer:3
+   },{
+    q:'The study of religion and religious ideas and beliefs',
+    options:['theocracy','theosophy','theology','theism'],
+    answer:2
+   },{
+    q:'Dissection of a dead body to find the cause of death.',
+    options:['biopsy','investigation','surgery','autopsy'],
+    answer:4
+   },{
+    q:'A person without training or experience in a skill or subject',
+    options:['chaplain','mason','artisan','novice'],
+    answer:4
+   },{
+    q:'One who stays away from school with permission',
+    options:['pedant','supplicant','mendicant','truant'],
+    answer:4
+   },{
+    q:'The act of killing a whole group of people, especially a whole race',
+    options:['patricide','parricide','matricide','genocide'],
+    answer:4
+   },{
+    q:'A government in which all religions are honoured',
+    options:['communist','socialistic','secular','capitalist'],
+    answer:3
+   },{
+    q:'A place where government/public records are kept',
+    options:['archive','museum','shelf','cellar'],
+    answer:1
+   },{
+    q:'Living together of a man and woman without being married to each other',
+    options:['marriage','equipage','lineage','concubinage'],
+    answer:4
+   },{
+    q:'Too much official formality',
+    options:['bureaucracy','red-tapism','nepotism','formalism'],
+    answer:2
+   },{
+    q:'Dry weather with no rainfall',
+    options:[' draught','draf','drought','desert'],
+    answer:3
+   },{
+    q:'A sly look that is lustful',
+    options:[' leer','lore',' lark ','littoral'],
+    answer:1
+   },{
+    q:'A jocular person who is full of amusing anecdotes',
+    options:['wile','wile','wag',' aeon'],
+    answer:3
+   },{
+    q:'Deep in thought',
+    options:['meditation','pensive','pesky','purloin'],
+    answer:2
+   },{
+    q:'Without risk of punishment',
+    options:['impudent','impunity','inexorable','imperturable'],
+    answer:2
+   },{
+    q:'The worship of idols or images',
+    options:['atheism','theism','idolatry','iconoclasm'],
+    answer:3
+   },{
+    q:'Something that is poisonous or unhealthy',
+    options:['trivial','toxic','torpid','tragic'],
+    answer:2
+   },{
+    q:'A remedy for all diseases',
+    options:['amnesia','panacea','intelligentsia','parasol'],
+    answer:2
+   },{
+    q:'A hater of mankind',
+    options:['misanthrope','misogynist','philanthropist','misogamist'],
+    answer:1
+   },{
+    q:'Irresistible craving for alcoholic drinks',
+    options:['megalomania','dipsomania','kleptomania','pyromania'],
+    answer:2
+   },{
+    q:'One who deserts his principles or party.',
+    options:['apostle','proselyte','renegade','critic'],
+    answer:3
+   },{
+    q:'One who intervenes between two or more parties to settle differences',
+    options:['neutral','intermediary','judge','connoisseur'],
+    answer:2
+   },{
+    q:'The habit of always admiring oneself',
+    options:[' psychosis','neurosis','narcissism','paranoia'],
+    answer:3
+   },{
+    q:'To take back, withdraw or renounce',
+    options:['repent','retrace','refuse','recant'],
+    answer:4
+   },{
+    q:'A pen for small animals',
+    options:['hutch','lair','den ','cage'],
+    answer:1
+   },{
+    q:'A woman having more than one husband at the same time',
+    options:[' polyandry','polygamy','polyphony','polygyny'],
+    answer:1
+   },{
+    q:'Feeding on food made both of plants and flesh',
+    options:['carnivorous','omnipotent','omnivorous','optimist'],
+    answer:3
+   },{
+    q:'One who destroys images or attacks popular beliefs',
+    options:['imagist','misanthropist','iconoclast','masochist'],
+    answer:3
+   },{
+    q:'Violation of something holy and sacred',
+    options:['pollution','pilferage','sacrilege','pittance'],
+    answer:3
+   },{
+    q:'A place where nuns live and work',
+    options:['church','school','abode','convent'],
+    answer:4
+   },{
+    q:'General view of a person’s character',
+    options:['biography','profile','introduction','sketch'],
+    answer:2
+   },{
+    q:'Wild and noisy disorder',
+    options:['agitation','revolution','pandemonium','stir'],
+    answer:3
+   },{
+    q:' The first public speech delivered by a person',
+    options:['maiden speech','inaugural speech','trial speech','marathon speech'],
+    answer:1
+   },{
+    q:'One who does not follow the usual rules of social life',
+    options:['bohemian','artisan','partisan','physician'],
+    answer:1
+   },{
+    q:'Placing a thing beside anothe',
+    options:['impose','repose','juxtapose','expose'],
+    answer:3
+   },{
+    q:'Expert in the scientific study of birds',
+    options:['dermatologist','zoologist','ornithologist','astronaut'],
+    answer:3
+   },{
+    q:'Building in which dead bodies are kept for a time',
+    options:['mortuary','monastery','sanatorium','crematorium'],
+    answer:1
+   },{
+    q:'One who believes that gaining pleasure is the most important thing in life',
+    options:['hedonist','pessimist','misanthrope','philistine'],
+    answer:1
+   },{
+    q:'One who breaks the established traditions and image',
+    options:['fatalist','fanatic','iconoclast','philogynist'],
+    answer:3
+   },{
+    q:'Property handed down after the death of a person',
+    options:['legacy','legend','patrimony ','inheritance'],
+    answer:4
+   },{
+    q:'Belief that war and violence are unjustified',
+    options:['neutralisation','pessimism','naturalisation','pacifism'],
+    answer:4
+   },{
+    q:'A group of girls',
+    options:['bevy','covey','troupe','coterie'],
+    answer:1
+   },{
+    q:'Causing or ending in death',
+    options:['fatal','deadly','serious','dangerous'],
+    answer:1
+   },{
+    q:' A short poem or speech addressed to the spectators after the conclusion of a drama',
+    options:['prologue','dialogue','epilogue','monologue'],
+    answer:3
+   },{
+    q:'One who loves books',
+    options:['scholar','bibliographer','teacher','bibliophile'],
+    answer:4
+   },{
+    q:'One who has obstinate and narrow religious views',
+    options:['theosophist','bigot','philosopher','theologian'],
+    answer:2
+   },{
+    q:'The sound of the funeral bell',
+    options:['knell','spell','dong',' ding-dong'],
+    answer:1
+   },{
+    q:'Military waking signal sounded in the morning',
+    options:['reveille','lullaby','anthem','soprano'],
+    answer:1
+   },{
+    q:'Study of insects',
+    options:['ecology','embryology','entomology','biology'],
+    answer:3
+   },{
+    q:'A person in his seventies',
+    options:['sexagenarian','septuagenarian','centurion','patriarch'],
+    answer:2
+   },{
+    q:' A government by officials',
+    options:['oligarchy','aristocracy','plutocracy','bureaucracy'],
+    answer:4
+   },{
+    q:'One who walks in sleep',
+    options:['somniloquist','egoist','somnambulist','altruist'],
+    answer:3
+   },{
+    q:'Commencement of adjacent words with the same letter',
+    options:['pun','alliteration','transferred epithet','oxymoron'],
+    answer:2
+   },{
+    q:'A specialist who tests eyesight',
+    options:['optician',' ophthalmologist','ichthyologist','neurologist'],
+    answer:2
+   },{
+    q:'A wall built to prevent the sea or a river from flooding an area',
+    options:['dam ','mound','dyke',' embankment'],
+    answer:3
+   },{
+    q:'To be biased against',
+    options:['partial','objective','prejudiced','predestined'],
+    answer:3
+   },{
+    q:' Motion of head, hands etc., as a mode of expression indicating attitude',
+    options:['gesture','grin','gestation','grimace'],
+    answer:1
+   },{
+    q:'Bitter and violent attack in words',
+    options:['diaspora','diacriticism','diadem','diatribe'],
+    answer:4
+   },{
+    q:'Treatment by means of exercise and massage',
+    options:['chemotherapy','hydrotherapy','physiotherapy','psychotherapy'],
+    answer:3
+   },{
+    q:'The abandonment of one’s country or cause',
+    options:['defection','disloyalty','desertion','migration'],
+    answer:3
+   },{
+    q:'A place where birds are kept',
+    options:['aquarium','dareen','aviary','sanctuary'],
+    answer:3
+   },{
+    q:'A method which never fails',
+    options:['unflinching','irreparable','irremediable','infallible'],
+    answer:4
+   },{
+    q:'Something which cannot be believed.',
+    options:['inevitable','ineffable','incredible','ineluctable'],
+    answer:3
+   },{
+    q:'Body of a human being or animal embalmed for burial',
+    options:['corpse','mummy','morgue','mortuary'],
+    answer:2
+   },{
+    q:'Of very bad morals; characterised by debasement or degeneration.',
+    options:['desultory','dilapidated','depraved','dilatory'],
+    answer:3
+   },{
+    q:'Government by a ruler who has unlimited power.',
+    options:['despotism','autocracy','monarchy ','anarchy'],
+    answer:2
+   },{
+    q:'An occasion of great importance',
+    options:['exemplary','momentous','herculean','grandiose'],
+    answer:2
+   },{
+    q:'A person who is always hopeful and looks upon the brighter side of things',
+    options:['florist','artist','theist','optimist'],
+    answer:4
+   },{
+    q:'Place of burial',
+    options:['cave','church','synagogue','cemetery'],
+    answer:4
+   },{
+    q:'To have a very high opinion of oneself',
+    options:['exaggeration','adulations','abundance','conceited'],
+    answer:4
+   },{
+    q:'One who believes in giving equal opportunity to women in all fields',
+    options:['canatic','misogynist','philanderer','feminist'],
+    answer:4
+   },{
+    q:'Inability to sleep',
+    options:['hysteria','insomnia','aphasia','amnesia'],
+    answer:2
+   },{
+    q:'One who is given to pleasures of the flesh',
+    options:['terrestrial','epicurean','celestial','pedestrian'],
+    answer:2
+   },{
+    q:'A tank where fish or water plants are kept',
+    options:['aquarium','sanatorium','nursery','aviary'],
+    answer:1
+   },{
+    q:' A person who never takes alcoholic drinks',
+    options:['teetotaller','alcoholic',' addict','bagpiper'],
+    answer:1
+   },{
+    q:'Belief that God is in everything and that everything is God',
+    options:['atheism','pantheism','scepticism','animism'],
+    answer:2
+   },{
+    q:'A picture of a person or a thing drawn in such a highly exaggerated manner as to cause laughter',
+    options:['cartoon','cacography','cartography','caricature'],
+    answer:4
+   },{
+    q:'The state of being miserable bereft of all possessions',
+    options:['dependant',' complacent','destitute','omnipresent'],
+    answer:3
+   },{
+    q:'That which cannot be called back',
+    options:[' irresponsible','irrevocable','irredeemable','incalculable'],
+    answer:2
+   },{
+    q:'One who journeys from place to place',
+    options:['quack','cannibal','itinerant','courier'],
+    answer:3
+   },{
+    q:'Study of insects is',
+    options:['etymology','entomology','ecology','embryology'],
+    answer:2
+   },{
+    q:'Careful in the spending of money, time, etc',
+    options:['punctual','economical','miserly','calculative'],
+    answer:2
+   },{
+    q:'Reproducing or memorizing word for word',
+    options:['verbatim','verbose','verbiage','verbalism'],
+    answer:1
+   },{
+    q:'That which cannot be captured',
+    options:['unbreakable','ungrippable','impregnable','slippery'],
+    answer:2
+   },{
+    q:'One who breaks the law',
+    options:['aggressor','politician','transgressor','pedestrian'],
+    answer:3
+   },{
+    q:'An underhand device resorted to in order to justify misconduct',
+    options:[' subterfuge','manoeuvre','stratagem','complicity'],
+    answer:2
+   },{
+    q:'Impossible to describe',
+    options:['miraculous','ineffable','stupendous','appalling'],
+    answer:2
+   },{
+    q:'One who criticises popular beliefs which he thinks is mistaken or unwise',
+    options:['philistine','iconoclast','imposter','cannibal'],
+    answer:2
+   },{
+    q:'Detaining and confining someone',
+    options:['interruption','interrogation','interment','internment'],
+    answer:4
+   },{
+    q:'Science of the races of mankind',
+    options:['genealogy','epistemology','ethnology','sociology'],
+    answer:3
+   },{
+    q:'One who hides away on a ship to obtain a free passage',
+    options:['composito','stoker','stowaway','shipwright'],
+    answer:3
+   },{
+    q:'Clues available at a scene',
+    options:['circumstantial','derivative','inferential','suggestive'],
+    answer:1
+   },{
+    q:' An unexpected piece of good fortune',
+    options:['windfall','philanthropy','benevolence','turnstile'],
+    answer:1
+   },{
+    q:'An emolument over and above fixed income or salary',
+    options:['honorarium','sinecure','perquisite','prerogative'],
+    answer:1
+   },{
+    q:'The animals of a particular region.',
+    options:['flora','museum','zoo','fauna'],
+    answer:4
+   },{
+    q:'An involuntary action under a stimulus is described as a',
+    options:['complex','reflex','reflection','response'],
+    answer:2
+   },{
+    q:'A continuous process of change is known as',
+    options:['transformation','metamorphosis','flux','dynamism'],
+    answer:3
+   },{
+    q:'The use of many words where only a few are necessary',
+    options:['circumlocution','circumspection','circumscription','circumvention'],
+    answer:1
+   },{
+    q:'Circular building or hall with a dome',
+    options:['edifice','palace','rotunda','spire'],
+    answer:3
+   },{
+    q:'One who is a citizen not of a country but of the world',
+    options:['bohemian','cosmopolitan','philanthropist','internationalist'],
+    answer:2
+   },{
+    q:'To run away with a lover',
+    options:['deceive','cheat','escape','elope'],
+    answer:4
+   },{
+    q:'Science of heredity',
+    options:['hereditary','genetics','genesis',' inheritance'],
+    answer:2
+   },{
+    q:'Arrangement in order of occurrence',
+    options:['timely','chronologica','chronic','temporal'],
+    answer:2
+   },{
+    q:'Occurring at night',
+    options:['nightly','dark','neurotic','nocturnal'],
+    answer:4
+   },{
+    q:'Determine the nature of the disease',
+    options:['investigate','determine','diagnose','detect'],
+    answer:3
+   },{
+    q:'Person who insists on adherence to formal rules or literary meaning',
+    options:['scholar','pedant','pedagogue','literalist'],
+    answer:2
+   },{
+    q:'Calmness and indifference to suffering',
+    options:['stoicism','despair','agony','materialism'],
+    answer:1
+   },{
+    q:' The practice of having more than one husband',
+    options:['polyandry','polygamy','bigamy',' debauchery'],
+    answer:1
+   },{
+    q:'Seeing something which is not actually present',
+    options:['imagination','presumption',' hallucination','supposition'],
+    answer:3
+   },{
+    q:'With much liveliness and a sense of purpose',
+    options:['lousily','jocularly','zealously','jauntily'],
+    answer:4
+   },{
+    q:'Instrument to measure atmospheric pressure',
+    options:['metronome','compass','pedometer','barometer'],
+    answer:4
+   },{
+    q:' One who tends to take a hopeful view of life',
+    options:['magnate','creator','pacifist','optimist'],
+    answer:4
+   },{
+    q:'Belonging to all parts of the world',
+    options:['common','universal','worldly','international'],
+    answer:2
+   },{
+    q:'To be known for bad acts',
+    options:['famous','notorious','criminal','terrorist'],
+    answer:2
+   },{
+    q:'Words of similar meaning',
+    options:['homonyms','pseudonyms','antonyms','synonyms'],
+    answer:4
+   },{
+    q:'Code of diplomatic etiquette and precedence',
+    options:['statesmanship','diplomacy','hierarchy','protoco'],
+    answer:4
+   },{
+    q:'To renounce a high position of authority or control',
+    options:['abduct','abandon','abort','abdicate'],
+    answer:4
+   },{
+    q:'Not to be moved by entreaty',
+    options:['rigorous',' negligent','inexorable','despotic'],
+    answer:3
+   },{
+    q:'An object or portion serving as a sample',
+    options:['specification','spectre','spectacle','specimen'],
+    answer:4
+   },{
+    q:'The practice of submitting a proposal to popular vote',
+    options:['election','reference','popularity','referendum'],
+    answer:4
+   },{
+    q:'An inscription on a tomb',
+    options:['espionage','epilogue','epitaph','elegy'],
+    answer:3
+   },{
+    q:'Feeling inside you which tells you what is right and what is wrong',
+    options:['cleverness','conscience','consciousness','fear'],
+    answer:2
+   },{
+    q:'Release of a prisoner from jail on certain terms and condition',
+    options:['parole','parley','pardon','acquittal'],
+    answer:1
+   },{
+    q:'Loss of memory',
+    options:['ambrosia','amnesia','insomnia','forgetting'],
+    answer:2
+   },{
+    q:'To struggle helplessly',
+    options:['flounder','founder','fumble','finger'],
+    answer:1
+   },{
+    q:'A post with little work but high salary',
+    options:['director',' trustee','sinecure','ombudsman'],
+    answer:3
+   },{
+    q:'Something that causes death',
+    options:['dangerous ','fatal','brutal','horrible'],
+    answer:2
+   },{
+    q:'.A person who writes decoratively',
+    options:['calligrapher','collier','choreographer','cartographer'],
+    answer:1
+   },{
+    q:'Pertaining to cattle',
+    options:['canine','feline','bovine','verminous'],
+    answer:3
+   },{
+    q:'To look at someone in an angry or threatening way',
+    options:['glower','gnaw','gnash','grind'],
+    answer:1
+   },{
+    q:'A person who has no money to pay off his debts',
+    options:['insolvent','poor','destitute','pauper'],
+    answer:1
+   },{
+    q:'Words uttered impiously about God',
+    options:['amoral','philosophy','logic','blasphemy'],
+    answer:4
+   },{
+    q:'One who compiles a dictionary',
+    options:['geographer','lexicographer','lapidist','linguist'],
+    answer:2
+   },{
+    q:'A test in which cells from diseased organs are removed and tested',
+    options:['biopsy','autopsy','operation','amputation'],
+    answer:1
+   }
+   
+   
+   
+ 
+   
+   
+   
+   
+  ]
+
+  totalQuestionSpan.innerHTML=10;
+  function load(){
+        questionNumberSpan.innerHTML=index+1;
+         question.innerHTML=questions[questionIndex].q;     
+         op1.innerHTML=questions[questionIndex].options[0];
+         op2.innerHTML=questions[questionIndex].options[1];
+         op3.innerHTML=questions[questionIndex].options[2];
+         op4.innerHTML=questions[questionIndex].options[3];
+         index++;
+  }
+  
+  function check(element){
+   if(element.id==questions[questionIndex].answer){
+    element.classList.add("correct");
+    updateAnswerTracker("correct")
+    score++;
+   // console.log("score:"+score)
+   }
+   else{
+    element.classList.add("wrong");
+    updateAnswerTracker("wrong")
+
+   }
+   disabledOptions()
+  }
+   
+  function disabledOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.add("disabled");
+      if(options[i].id==questions[questionIndex].answer){
+       options[i].classList.add("correct");
+      }
+
+     }
+  }
+  
+  function enableOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.remove("disabled","correct","wrong");
+     }
+  }
+
+  function validate(){
+      if(!options[0].classList.contains("disabled")){
+       // alert("Please Selecto one option")
+	   enableOptions();
+       randomQuestion();
+      }
+      else{
+       enableOptions();
+       randomQuestion();
+      }
+  }
+
+  function next(){
+    validate();
+  }
+   
+  function randomQuestion(){
+   let randomNumber=Math.floor(Math.random()*questions.length);
+   let hitDuplicate=0;
+       if(index==10){
+        quizOver();
+       }
+       else{
+         if(myArray.length>0){
+             for(let i=0; i<myArray.length; i++){
+               if(myArray[i]==randomNumber){
+                  hitDuplicate=1;
+                  break;
+               }
+             }
+             if(hitDuplicate==1){
+              randomQuestion();
+             }
+             else{
+               questionIndex=randomNumber;   
+              load();
+              myArr.push(questionIndex);
+             }
+         }
+         if(myArray.length==0){
+           questionIndex=randomNumber;   
+           load();
+           myArr.push(questionIndex);
+         }
+
+       myArray.push(randomNumber);
+       
+      }
+  }
+      
+  function answerTrakcer(){
+     for(let i=0; i<10; i++){
+      const div=document.createElement("div")
+         answerTrackerContainer.appendChild(div);
+     }
+  }
+
+ function updateAnswerTracker(classNam){
+   answerTrackerContainer.children[index-1].classList.add(classNam);
+ }
+
+ function quizOver(){
+    document.querySelector(".quiz-over").classList.add("show");
+    correctAnswerSpan.innerHTML=score;
+    totalQuestionSpan2.innerHTML=10;
+    percentage.innerHTML=(score/10)*100 + "%";
+ }
+ 
+ function tryAgain(){
+     window.location.reload();
+ }
+
+ window.onload=function(){
+  randomQuestion();
+  answerTrakcer();
+ 
+}
+
+</script>
+
+</body>
+</html>

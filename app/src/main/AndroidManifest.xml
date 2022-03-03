@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.ssc.engquiz">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/eng"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/eng"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".sets.ResultAcitvity2"></activity>
+        <activity android:name=".activities.practreader" />
+        <activity android:name=".sets.QuestionActivity" />
+        <activity android:name=".sets.SetsActivity" />
+        <activity android:name=".game.QuizActivity" />
+        <activity android:name=".game.ResultAcitvity" />
+        <activity android:name=".activities.pdferror" />
+        <activity android:name=".activities.pdfvocb" />
+        <activity android:name=".activities.pdfreader" />
+        <activity android:name=".activities.engsets" />
+        <activity android:name=".activities.quiz" />
+        <activity android:name=".activities.Comerror" />
+        <activity android:name=".activities.vocabulary" />
+        <activity android:name=".activities.grammar" />
+        <activity android:name=".activities.jitu" />
+        <activity android:name=".activities.practices" />
+        <activity android:name=".MainActivity2" />
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
+    </application>
+
+</manifest>

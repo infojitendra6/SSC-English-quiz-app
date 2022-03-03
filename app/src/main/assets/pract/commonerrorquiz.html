@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+ 
+<style>
+body{
+ margin:0;
+  background-image: linear-gradient(to bottom right, red, yellow);
+  font-family: sans-serif;
+}
+
+.question-number,
+.question,
+.options,
+.button,
+.answers-tracker{
+ float: left;
+ width: 100%;
+}
+.question-number h3{
+text-align: center;
+ color:green;
+ border-bottom: 1px solid #ccc;
+ margin:0;
+ padding-bottom:10px;
+}
+.question {
+
+ color:#fff;
+ text-style:bold;
+
+ padding:20px 0;
+ 
+}
+
+.options div{
+  background-color: #cccccc;
+  font-size:16px;
+  color:000000;
+  
+  margin-bottom:10px;
+  border-radius:5px;
+  padding:10px;
+  position: relative;
+  overflow:hidden;
+  cursor: pointer;
+}
+.options div.disabled{
+ pointer-events: none;
+}
+.options div.correct{
+ z-index: 1;
+ color: #fff;
+}
+.options div.correct::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color: green;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+.options div.wrong{
+ z-index: 1;
+ color: #fff;
+}
+.options div.wrong::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color:red;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+
+
+.button .btn{
+ padding:15px 50px;
+ border-radius:5px;
+ cursor: pointer;
+ width: 100%;
+ background-color:green;
+ font-size:16px;
+   justify-content: center;
+  
+ color:#ffffff;
+ border: none;
+ display: inline-block;
+ margin:15px 0 20px;
+}
+
+
+
+.quiz-over{
+ position: fixed;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-image: linear-gradient(to bottom right, red, yellow);
+ z-index: 10;
+ display: none;
+ align-items: center;
+ justify-content: center;
+}
+.quiz-over.show{
+ display: flex;
+}
+.quiz-over .box{
+ background-color: #009688;
+ padding:30px;
+ border-radius:10px;
+ text-align: center;
+ flex-basis: 700px;
+ max-width:700px;
+ color:#ffffff;
+}
+
+.quiz-over .box h1{
+ font-size:36px;
+ margin:0 0 20px;
+}
+
+.quiz-over .box button{
+ padding:15px 50px;
+ border:none;
+ background-color:#FF9800;
+ border-radius:5px;
+ font-size:16px;
+ margin:15px 0 20px;
+ color:#ffffff;
+}
+
+</style>
+</head>
+<body>
+     <div class="quizContainer container-fluid well well-lg">
+    <div class="question-number">
+       <h3><b>Question <span class="question-num-value"></span> of <span class="total-question"></span></b></h3>
+    </div>
+    <div class="question">
+      
+    </div>
+    <div class="options">
+       <div id="1" class="option1" onclick="check(this)"></div>
+       <div id="2" class="option2" onclick="check(this)"></div>
+       <div id="3" class="option3" onclick="check(this)"></div>
+       <div id="4" class="option4" onclick="check(this)"></div>
+    </div>
+    <div class="button">
+       <button type="button" class="btn" onclick="next()">Next</button>
+    </div>
+    <div class="answers-tracker">
+       
+    </div>
+
+ 
+ <div class="quiz-over">
+   <div class="box">
+     <h1>
+       Good Job<br>
+      You Correct! <span class="correct-answers"></span> out of <span class="total-question2"></span>  <br>
+      Your percentage is <span class="percentage"></span>.
+     </h1>
+     <button type="button" onclick="tryAgain()">TryAgain</button>
+   </div>
+ </div>
+</div>
+<script>
+  
+  const options=document.querySelector(".options").children;
+  const answerTrackerContainer=document.querySelector(".answers-tracker");
+  const questionNumberSpan=document.querySelector(".question-num-value");
+  const totalQuestionSpan=document.querySelector(".total-question");
+  const correctAnswerSpan=document.querySelector(".correct-answers");
+  const totalQuestionSpan2=document.querySelector(".total-question2");
+  const percentage=document.querySelector(".percentage");
+  const question=document.querySelector(".question");
+  const op1=document.querySelector(".option1");
+  const op2=document.querySelector(".option2");
+  const op3=document.querySelector(".option3");
+  const op4=document.querySelector(".option4");
+  let questionIndex;
+  let index=0;
+  let myArray=[];
+  let myArr=[];
+  let score=0;
+
+  // questions and options and answers
+
+  const questions=[
+   {
+    q:'You must either (A)/ be regular with your studies (B)/ and study for longer period before the examination. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   }, {
+    q:'The new taxation rates (A)/ announced by the government (B)/are bound to effect the export sector. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'These days, job opportunities are not as better (A)/ as they used to be (B)/ in the early 70s. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'When viewed with his point of view, the (A) / entire episode assumes (B)/ a different colour altogether. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'On many occasions (A)/ we did helped the poor (B)/ people by way of giving them food to eat and clothes to put on. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Unless it is accepted to both the parties, an (A)/ arbitrator would be of no (B)/ use to settle this dispute. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Although the manager was keen on getting the work (A)/ done through Sudhir yesterday, (B)/ he tries to avoid it (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The various consequences of(A)/the decision taken by the (B)/ finance ministry was not foreseen by the bureaucrats. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'I never considered him to be a person who would (A)/ go back on his promise and (B)/ then do not even apologise. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Having finished at school (A)/Raghu thought/ of going to Bombay in (B)/ search some job.(C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'When shall we (A)/ arrive (B)/to our destination ? (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Based on the newspaper reports,(A)/ we can conclude that (B)/many accidents caused by reckless driving. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:' Females (A)/ are not appointed(B)/ in our college. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'The officer (A)/ is angry on the clerk (B)/ for not attending to the work. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'No sooner (A)/ I had spoken, (B) than he left. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Computer education (A)/ in universities and colleges (B) leaves much to be desired. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'You will be prosecuted (A)/ for bringing seeds (B)/ into Australia. ( (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'You must either tell me (A)/ the whole story or, at least (B)/ the first half of it. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Our new neighbours (A)/ had been living in Arizona (B)/ since ten years before moving to their present house. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The patient (A)/ was accompanied (B)/ with his friend. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:' A city dweller finds it difficult (A)/to pass away the time (B)/ in a village. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:' Visitors (A)/ were not permitted (B)/ entering the park (C)/ after dark. No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The fifth and final act (A)/ of Macbeth contain (B)/ the sleepwalking scene. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'One of the terrorists (A)/ of the Kashmir valley (B)/ are shot dead.(C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Ten kilometres (A)/ is (B)/ a long distance to walk. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'I saw him (A)/a couple of times(B)/ since May(C). /No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Tea (A)/which I am drinking (B)/is hot (C). /No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Although the police officer sympathised with poor (A)/ he refused to (B) /take an action against the rich man (C). /No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'We were looking forward (A)/ to hear news (B)/about the missing fishermen (C)./ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The actress (A)/was shocked (B)/by the news of her dog’s death (C). /No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'One of the questions (A)/ he asked me was (B)/ “Who did you travel with (C) ?” /No error (D) )',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'I know (A)/a doctor (B)/you are referring to (C)./No error (D))',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The introduction of job-oriented courses (A)/in the self-financing colleges (B)/ attract many students (C)./ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'It is better (A)/to keep one’s head in the face of danger than (B)/losing one’s courage (C). /No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The short story (A)/should not exceed (B)/more than two hundred words (C)./No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'To die with honour (A)/is better than (B)/live with dishonour.(C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'It is I (A)/who is to blame.(B)/for this bad situation(C)./ No error.(D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Gowri told me(A)/his name after(B)/he left. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'John would have told (A)/you the truth (B)/ if you had asked him. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'My sister (A)/has read (B)/pages after pages of the Bible. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Your success in the IAS examinations depends not only on (A)/what papers you have selected (B)/but on how you have written them. (C) No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Heavy rain (A)/prevented us (B)/to go to the cinema. (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'If majority of the individuals in a State (A)/prosper (B)/the State itself would prosper. (C) /No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'If motorists do not observe the traffic regulations (A)/they will be stopped, ticketed (B)/and have to pay a fine. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'He asked (A)/supposing if he fails (B)/ what he would do. (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'We had a lot of difficulty(A)/to find (B)/the house. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Patience as well as perseverance (A)/are necessary (B)/for success. (C)/ No error/(D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The passer-by told us (A)/where was the marriage hall (B)/and even led us to it. (C)/ No error/(D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The increase in consumption is directly (A)/proportional to the increase (B)/in income. (C)/No error. (D).',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:' In Singapore (A)/my brother-inlaw with his wife (B)/were present at the function. (C)/No error. (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Scarcely had (A)/I arrived than (B)/the train left. (C)/No error. (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The reason why (A)/he was rejected (B)/was because he was too young. (C)/No error. (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Teachers of various schools (A)/ met to discuss about (B)/how to improve the standard of English.(C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'His tradition-bound attitude (A)/had to be a constant source of dissatisfaction (B)/among the younger members of the family.(C)/No error. (D).',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'The two first to arrive (A)/were the lucky recipients (B)/of a surprise gift. (C)/No error. (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Two hours have passed (A)/since (B)/he had fallen asleep.(C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Having broken down (A)/the driver sent the car (B)/to the garage. (C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'He is one of those writers (A)/ who has won acclaim (B)/the world over.(C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The mason will not (A)/do the work (B)/except give the order.(C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'When students are ill (A)/they find that they have a lot of work (B)/to catch up with when they return. (C)/No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Scarcely did I reach the airport, (A)/nervous and tense, than the plane took off, (B)/leaving me stranded in an alien place. (C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The power to (A)/distinguish between differences (B)/is the basis of science and art. (C)/No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'I have (A)/seen her only once (B)/ but I’m liking her a lot. (C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'I told him (A)/that we enjoyed very much (B)/at the party. (C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'John is working very hardly (A)/as the examinations (B)/are fast approaching. (C)/No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'He ate (A)/ nothing (B)/ since yesterday (C)/. No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'An experimental vaccine (A)/ has brought (B)/ glimmer of hope for the malarial researchers (C)/. No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'After making me wait for two agonising hours (A)/ the great man called me in (B)/ and asked me what do I want (C)/. No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The ebb and flow of the tides (A)/ are (B)/ now understood (C)/. No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The green paint on the wall (A)/provides a suitable contrast (B)/ with the yellow doors (C)/. No error (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:' Even today (A)/ it is incredulous to think (B)/ that men have walked on the moon. /(C) No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The firemen wore (A)/ inflammable clothing (B)/ for protection. /(C) No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'. Beside food, (A)/ the pilgrims carried (B)/ some medicines. /(C) No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Adults suffering chicken pox (A)/ can develop (B)/ all kinds of complications (C) No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'The well-known pianist (A)/ had to practice for several hours a day (B)/ even after he rose to fame. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The Prime Minister was asked (A)/to write a forward (B)/ to the book.(C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'I must complement you (A)/ on your good manners (B)/ and your impeccable behaviour. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'The sweets (A)/ were shared (B)/between the four girls. /(C) No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The long-distance train (A)/ which met with an accident (B)/ was carrying some army personal. /(C) No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The young men from Japan (A)/found the assent of the mountain(B)/ hard going. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'If the worst (A)/comes to worst,(B)/I will have to bid good-bye to my studies and join my family business. (C) /No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The interim report does not (A)/analyse thoroughly the principle causes (B)/of the disaster (C) /No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The items I liked most (A)/were the rosewood carvings (B)/and the teak-wood furnitures of Dutch design (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'A part of the training (A)/they offered was (B)/real good (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:' The soil was moist as (A)/there was little rain (B)/the day before(C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The manager wanted to know who had arrived (A)/early that day (B)/the cashier or the accountant (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'They are a politically important family; (A)/one of his sisters is a minister (B)/ and the other is married with a minister (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Supposing that the information(A)/proves to be totally reliable,(B)/should we still have to recast the plans ? (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Though its gloss can (A)/fool few unwary customers, (B)/it wouldn’t be difficult for the clever ones to judge its real worth (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'She pretends as if she has (A)/ never in her life, (B)/told a lie. Isn’t it ? (C)/No error.(D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:' Knowledge of (A)/ at least two languages (B)/ are required to pass the examination (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The members of the Opposition Party in the Parliament (A)/ shout upon the minister (B)/ if he makes a wrong statement (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Everyone of the films (A)/ you suggested (B)/ are not worth seeing (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'The Secretary and the Principal of the college (A)/ are attending (B)/ the District Development Council Meeting at the Collectorate (C)/. No error (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'No sooner had the hockey match started (A)/ when it began (B)/to rain (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The Secretariat (A)/ comprises of (B)/ many air-conditioned rooms (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'It is high time (A)/ he stood on his own (B)/ two legs (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'You should avoid (A)/ to travel (B)/in the rush hour (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'There is (A)/ only one of his novels (B)/ that are interesting (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'He denied (A)/ to have (B)/ been there (C)/. No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:' A milk (A)/ can provide protein(B)/ for a nutritionally balanced diet. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:' When the football team walked onto the field (A)/ the crowd burst into applause, (B)/ but some cheers were heard too. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'A lot of form-filling is just red tape, (A)/ and sometimes the forms are so complicated (B)/ that people can’t make head or tail from them(C)./ No error (D).',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'You are required to explain (A)/your conduct within two days (B)/of the receipt of this letter, (C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:' I now (A)/ am knowing (B)/ all the facts about him.(C)/ No error(D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:' A hot and (A)/ a cold spring (B)/was found near each other (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'All doubts are cleared (A)/ between (B)/ you and I (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Either of the roads (A)/ lead (B)/to the park (C)/. No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'I went to the temple (A)/ with my parents, my aunts (B)/ and my cousins (C)/. No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:' I have passed (A)/ the examination (B)/ two years ago (C)/. No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:' The earth moves (A)/ round the Sun. (B)/ Isn’t it ? (C)/. No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Unless you do not give (A)/ the keys of the safe (B)/you will be shot (C)/. No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:' Of the billions of stars in the galaxy, (A)/ how much are (B)/suitable for life (C)/?. No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The value of the dollar (A)/ declines as the rate (B)/ of inflation raises (C)/. No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'One of my desires (A)/ are to become (B)/ a doctor (C)/. No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Banks were developed to keep people’s money safe (A)/ and to make it available (B)/ when they need it. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Based on the newspaper reports,(A)/ we can conclude that (B)/many accidents caused by reckless driving. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'He walked (A)/ till the (B)/ end of the street. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The strain of all (A)/ the difficulties and vexations and anxieties(B)/ are more than he could bear.(C)/No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'I was thinking (A)/ if I could do(B)/ anything to help. (C)/ Noerror (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'I meant nothing (A)/ less than(B)/ to compel you to come. (C)/No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Females (A)/ are not appointed(B)/ in our college. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'He has read four plays (A)/ written by Shakespeare (B)/ by the end of his vacation. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'The officer (A)/ is angry on the clerk (B)/ for not attending to the work. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Being (A)/ a rainy day (B)/ I could not go out. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'He is (A)/ capable to do this work(B)/ within the stipulated period. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:' I will send my servant (A)/ but I cannot insure (B)/ that he will reach there in time. (C)/ Noerror (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:' The lawyer asked the complainant (A)/ to put his sign (B)/ on the paper. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'When you have gone through the papers (A)/ kindly return them(B)/ to us. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'You could be better off these days(A)/ and this enables you (B)/ to have little more fun. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'In that wholesale shop (A)/ they do not sell (B)/ fewer than ten bags of rice. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The period (A)/ between 1980 to 1990 (B)/ was very significant in my life. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'He is not the fastest bowler (A)/in the Indian team, (B)/ isn’t he(C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'I went into (A)/ the bank and (B)/withdrew some money. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'I found (A)/ the two first chapters of the book (B)/ particularly interesting. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Bacon, the father of the English essay (A)/ had a thirst (B)/ of knowledge. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The train had left (A)/ when he had reached (B)/ the station. (C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'He said (A)/ that he will never(B)/ repeat the mistake. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:' I am able (A)/ to cope up with(B)/ all these difficulties. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:' I wish I am (A)/ the richest person (B)/ in the whole wide world. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'She is confident (A)/ to win the gold medal (B)/ this time. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The boy laid in the shelter (A)/for a long time before (B)/ somebody came to rescue him. (C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Standing at (A)/ the top of the hill, (B)/ the houses below were hardly visible. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:' Kambli is one of the players (A)/who has been selected (B)/ for the test match. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'A moment delay (A)/ would have proved costly (B)/ in the situation. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Ram disappointed his mother (A)/ as he did not (B)/ write to her very often. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'After you will return (A)/ from Chennai (B)/ I will come and see you. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Scenes from the film (A)/ had to be censured (B)/ before it was released. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'When my sister was ill (A)/ I went to the hospital (B)/ on alternative days. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The beautiful (A)/ surrounding of the place (B)/ enchanted me.(C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'No porter being available (A)/ he carried (B)/ all his luggages himself. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:' He will not be able (A)/ to cope up with (B)/ the pressure of work. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Lasers are (A)/ indispensable tools (B)/ for the delicate eyes surgery. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:' I take great pleasure (A)/ to welcome you (B)/ to this institution.(C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'The whole country (A)/ was suffering by (B)/ a financial crisis.(C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'I do not know where could he have gone (A)/ so early (B)/ in the morning. (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'I suggest that (A)/ he goes (B)/to the doctor as soon as he returns from the examination. (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'The introduction of tea and coffee (A)/ and such other beverages (B)/ have not been without some effect. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'In spite of the roadblock (A)/ the guards allowed us (B)/ enter the restricted area to search for our friends. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The newer type of automatic machines (A)/ washes (B)/ the clothes faster. (C)/No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'By the time (A)/ we got our tickets and entered the cinema theatre, (B)/ the show was already begun. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Each of the students in the computer class (A)/ has to type (B)/their own research paper this semester. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'The fact of me (A)/ being a stranger (B)/ does not excuse his conduct. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'The sea looks (A)/ as if it has been (B)/ agitated by a storm.(C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'A variety of pleasant items in the shop (A) / attract (B) / everybody. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'The table’s legs (A)/ have been(B) / elaborately carved. (C) /No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'The sceneries (A)/ of Kashmir(B)/ is very charming. (C)/ Noerror (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'I would appreciate if readers(A)/ would write to me (B)/about how they meditate. (C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Neither of the two children (A)/said their prayer (B)/ before going to bed. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'I sat down opposite him (A)/ and produced (B)/ the packet of cigarettes. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'This happened (A)/ just exactly(B)/ five years ago. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Ramesh smiled when he was remembering (A)/ his hard early years (B)/ and his long roadto success. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Good heavens ! (A)/ How has she (B)/ grown ! (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:' The doctor advised Mr. Murugan that, (A)/ because of his severe cramps, (B)/ he should lay in the bed for a few days.(C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:' He is a university professor (A)/but of his three sons (B)/ neither has any merit. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'After knowing truth, (A)/ they took the right decision (B)/ in the matter. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'It is time you (A)/ decide on your next (B)/ course of action. (C)/No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'He who has suffered the most(A)/ for the cause, (B)/ let him speak. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'A cup of coffee (A)/ is an excellent complement (B)/ to smoked salmon. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'Judge in him (A)/ prevailed upon the father (B)/ and he sentenced his son to death. (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'Nine-tenths (A)/ of the pillar (B)/have rotted away.(C)/No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'One major reason (A)/ for the popularity of television is (B)/that most people like to stay at home. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Our efforts are (A)/ aimed to bring about (B)/ a reconciliation.(C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Three conditions (A)/ critical for growing (B)/ plants are soil, temperature, chemical balance or amount of moisture. (C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:' If I had lots of money (A)/ I’d give some to anybody (B)/who asked for it. (C)/No error.(D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'The old man felled (A)/some of the trees in the garden (B)/with hardly no effort at all.(C)/ No error.(D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Until the world lasts, (A)/the earth will go (B)/ round the sun.(C)/ No error.(D)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'I go to the temple (A)/as often as(B)/I find time.(C)/ No error.(D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'A few tiles on skylab (A)/ were the only equipments (B)/ that failed to perform well in outer space.(C)/ No error (D).',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'I don’t (A)/ want to (B)/ loose it.(C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'Do not (A)/ get panicked (B)/ in emergencies. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'Sometimes (A)/ I get angry (B)/on her. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'I use (A)/ to go out (B)/ to work earlier. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:' The teacher (A)/ has took (B)/ the responsibility. (C)/ No error. (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'He walks (A)/ as if the earth (B)/ belongs to him (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:3
+   },{
+    q:'The clerk was (1)/ not intimidated by (2)/ his boss’s bullying (3)/ No error (4)',
+    options:['A','B','C','D'],
+    answer:4
+   },{
+    q:'This misogynist hates (A)/ all mother-in-laws, (B)/ lady-doctors and house maids (C)/ No error (D)',
+    options:['A','B','C','D'],
+    answer:2
+   },{
+    q:'How to solve the problems (A)/is the main concern of the organizers (B)/ at the moment (C)/No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   },{
+    q:'We requested the watchman(A)/ to clean up the basement(B)/ so that the children might have enough space to play (C)/No error (D)',
+    options:['A','B','C','D'],
+    answer:1
+   }
+   
+  ]
+
+  totalQuestionSpan.innerHTML=10;
+  function load(){
+        questionNumberSpan.innerHTML=index+1;
+         question.innerHTML=questions[questionIndex].q;     
+         op1.innerHTML=questions[questionIndex].options[0];
+         op2.innerHTML=questions[questionIndex].options[1];
+         op3.innerHTML=questions[questionIndex].options[2];
+         op4.innerHTML=questions[questionIndex].options[3];
+         index++;
+  }
+  
+  function check(element){
+   if(element.id==questions[questionIndex].answer){
+    element.classList.add("correct");
+    updateAnswerTracker("correct")
+    score++;
+   // console.log("score:"+score)
+   }
+   else{
+    element.classList.add("wrong");
+    updateAnswerTracker("wrong")
+
+   }
+   disabledOptions()
+  }
+   
+  function disabledOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.add("disabled");
+      if(options[i].id==questions[questionIndex].answer){
+       options[i].classList.add("correct");
+      }
+
+     }
+  }
+  
+  function enableOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.remove("disabled","correct","wrong");
+     }
+  }
+
+  function validate(){
+      if(!options[0].classList.contains("disabled")){
+       // alert("Please Selecto one option")
+	   enableOptions();
+       randomQuestion();
+      }
+      else{
+       enableOptions();
+       randomQuestion();
+      }
+  }
+
+  function next(){
+    validate();
+  }
+   
+  function randomQuestion(){
+   let randomNumber=Math.floor(Math.random()*questions.length);
+   let hitDuplicate=0;
+       if(index==10){
+        quizOver();
+       }
+       else{
+         if(myArray.length>0){
+             for(let i=0; i<myArray.length; i++){
+               if(myArray[i]==randomNumber){
+                  hitDuplicate=1;
+                  break;
+               }
+             }
+             if(hitDuplicate==1){
+              randomQuestion();
+             }
+             else{
+               questionIndex=randomNumber;   
+              load();
+              myArr.push(questionIndex);
+             }
+         }
+         if(myArray.length==0){
+           questionIndex=randomNumber;   
+           load();
+           myArr.push(questionIndex);
+         }
+
+       myArray.push(randomNumber);
+       
+      }
+  }
+      
+  function answerTrakcer(){
+     for(let i=0; i<10; i++){
+      const div=document.createElement("div")
+         answerTrackerContainer.appendChild(div);
+     }
+  }
+
+ function updateAnswerTracker(classNam){
+   answerTrackerContainer.children[index-1].classList.add(classNam);
+ }
+
+ function quizOver(){
+    document.querySelector(".quiz-over").classList.add("show");
+    correctAnswerSpan.innerHTML=score;
+    totalQuestionSpan2.innerHTML=10;
+    percentage.innerHTML=(score/10)*100 + "%";
+ }
+ 
+ function tryAgain(){
+     window.location.reload();
+ }
+
+ window.onload=function(){
+  randomQuestion();
+  answerTrakcer();
+ 
+}
+
+</script>
+
+</body>
+</html>

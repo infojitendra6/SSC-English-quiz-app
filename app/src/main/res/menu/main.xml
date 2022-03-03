@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+
+    <item
+        android:id="@+id/log_out"
+        android:orderInCategory="100"
+        android:title="Share App"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/check_update"
+        android:orderInCategory="101"
+        android:title="Check Update"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/other_app"
+        android:orderInCategory="102"
+        android:title="Other App"
+        app:showAsAction="never" />
+
+</menu>

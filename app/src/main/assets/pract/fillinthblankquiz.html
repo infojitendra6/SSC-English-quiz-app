@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+ 
+<style>
+body{
+ margin:0;
+  background-image: linear-gradient(to bottom right, red, yellow);
+  font-family: sans-serif;
+}
+
+.question-number,
+.question,
+.options,
+.button,
+.answers-tracker{
+ float: left;
+ width: 100%;
+}
+.question-number h3{
+text-align: center;
+ color:green;
+ border-bottom: 1px solid #ccc;
+ margin:0;
+ padding-bottom:10px;
+}
+.question {
+text-align: center;
+ font-size:22px;
+ color:#fff;
+ text-style:bold;
+
+ padding:20px 0;
+ 
+}
+
+.options div{
+  background-color: #cccccc;
+  font-size:16px;
+  color:000000;
+  
+  margin-bottom:10px;
+  border-radius:5px;
+  padding:10px;
+  position: relative;
+  overflow:hidden;
+  cursor: pointer;
+}
+.options div.disabled{
+ pointer-events: none;
+}
+.options div.correct{
+ z-index: 1;
+ color: #fff;
+}
+.options div.correct::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color: green;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+.options div.wrong{
+ z-index: 1;
+ color: #fff;
+}
+.options div.wrong::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color:red;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+
+
+.button .btn{
+ padding:15px 50px;
+ border-radius:5px;
+ cursor: pointer;
+ width: 100%;
+ background-color:green;
+ font-size:16px;
+   justify-content: center;
+  
+ color:#ffffff;
+ border: none;
+ display: inline-block;
+ margin:15px 0 20px;
+}
+
+
+
+.quiz-over{
+ position: fixed;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-image: linear-gradient(to bottom right, red, yellow);
+ z-index: 10;
+ display: none;
+ align-items: center;
+ justify-content: center;
+}
+.quiz-over.show{
+ display: flex;
+}
+.quiz-over .box{
+ background-color: #009688;
+ padding:30px;
+ border-radius:10px;
+ text-align: center;
+ flex-basis: 700px;
+ max-width:700px;
+ color:#ffffff;
+}
+
+.quiz-over .box h1{
+ font-size:36px;
+ margin:0 0 20px;
+}
+
+.quiz-over .box button{
+ padding:15px 50px;
+ border:none;
+ background-color:#FF9800;
+ border-radius:5px;
+ font-size:16px;
+ margin:15px 0 20px;
+ color:#ffffff;
+}
+
+</style>
+</head>
+<body>
+     <div class="quizContainer container-fluid well well-lg">
+    <div class="question-number">
+       <h3><b>Question <span class="question-num-value"></span> of <span class="total-question"></span></b></h3>
+    </div>
+    <div class="question">
+      
+    </div>
+    <div class="options">
+       <div id="1" class="option1" onclick="check(this)"></div>
+       <div id="2" class="option2" onclick="check(this)"></div>
+       <div id="3" class="option3" onclick="check(this)"></div>
+       <div id="4" class="option4" onclick="check(this)"></div>
+    </div>
+    <div class="button">
+       <button type="button" class="btn" onclick="next()">Next</button>
+    </div>
+    <div class="answers-tracker">
+       
+    </div>
+
+ 
+ <div class="quiz-over">
+   <div class="box">
+     <h1>
+       Good Job<br>
+      You Correct! <span class="correct-answers"></span> out of <span class="total-question2"></span>  <br>
+      Your percentage is <span class="percentage"></span>.
+     </h1>
+     <button type="button" onclick="tryAgain()">TryAgain</button>
+   </div>
+ </div>
+</div>
+<script>
+  
+  const options=document.querySelector(".options").children;
+  const answerTrackerContainer=document.querySelector(".answers-tracker");
+  const questionNumberSpan=document.querySelector(".question-num-value");
+  const totalQuestionSpan=document.querySelector(".total-question");
+  const correctAnswerSpan=document.querySelector(".correct-answers");
+  const totalQuestionSpan2=document.querySelector(".total-question2");
+  const percentage=document.querySelector(".percentage");
+  const question=document.querySelector(".question");
+  const op1=document.querySelector(".option1");
+  const op2=document.querySelector(".option2");
+  const op3=document.querySelector(".option3");
+  const op4=document.querySelector(".option4");
+  let questionIndex;
+  let index=0;
+  let myArray=[];
+  let myArr=[];
+  let score=0;
+
+  // questions and options and answers
+
+  const questions=[
+   {
+    q:'The flash of the torch.......a cobra',
+    options:['exposed','displayed','disclosed','revealed'],
+    answer:4
+   },{
+    q:' He.......himself a stiff drink before making his statement to the police officer',
+    options:['threw','poured',' filled','sipped'],
+    answer:2
+   },{
+    q:' It was his.......that led him to penury.',
+    options:['flamboyance','arrogance','extravagance','ebullience'],
+    answer:3
+   },{
+    q:'Gita was known to be a.......so nobody entrusted any important work to her',
+    options:['joke','worker','shocker','shirker'],
+    answer:4
+   },{
+    q:'The statue was so.......that people stared at it in horror.',
+    options:['grotesque','exquisite','beatific','cumbersome'],
+    answer:1
+   },{
+    q:'He was caught red-handed and could not.......the charges.',
+    options:['refute','refuse','rebuke','revoke'],
+    answer:1
+   },{
+    q:'Unhappy about the treatment meted out to her, Shanti....... demanded justice',
+    options:['sumptuously','voraciously','spasmodically','vociferously'],
+    answer:4
+   },{
+    q:'The police sprayed tear gas.......on the protesters',
+    options:['indirectly','intensively','indifferently',' indiscriminately'],
+    answer:4
+   },{
+    q:'We are happy to.......the receipt of your order No 4071 dated 13.3.96.',
+    options:['admit','accept','acknowledge','respond'],
+    answer:3
+   },{
+    q:'All jobs are respectable.......of their nature',
+    options:['irrelevant','immaterial','irresponsible','irrespective'],
+    answer:4
+   },{
+    q:'Nadheeka was musing ...... memories of the past',
+    options:['over','about',' on ','from'],
+    answer:1
+   },{
+    q:'The lame boy tried to climb up the staircase without ...... help',
+    options:['little','any',' some','many'],
+    answer:2
+   },{
+    q:'Each school has its own set of rules ......all good pupils should follow them.',
+    options:['but','or','so','and'],
+    answer:4
+   },{
+    q:'On my return from a long holiday, I had to ......with a lot of work.',
+    options:['catch on','catch up','make up','take up'],
+    answer:2
+   },{
+    q:'Only one of the boys ......not done the home-work given yesterday.',
+    options:[' have','has','can','could'],
+    answer:2
+   },{
+    q:' Hopes of a settlement depends on the ......of the discussion.',
+    options:['findings',' outcome','break through',' resolutions'],
+    answer:2
+   },{
+    q:'We must avail ourselves ......every opportunity that comes ......our way.',
+    options:['of ; in','on ; in','against ; for','to ; to'],
+    answer:1
+   },{
+    q:'It is time we ......with determination.',
+    options:['act','acted',' have acted','will act'],
+    answer:2
+   },{
+    q:'When the thief entered the house, the inmates ....in the hall.',
+    options:['were slept','were sleeping','slept','had been sleeping'],
+    answer:2
+   },{
+    q:'700 men worked for 10 years to......the Borobudur temple in Java to its former glory.',
+    options:['restore','give','create','revive'],
+    answer:1
+   },{
+    q:'The thief explained how he ....... from the jail.',
+    options:['escapes','had escaped','escaped','has escaped'],
+    answer:2
+   },{
+    q:'He held ...... to the books passionately',
+    options:['on','in','off','away'],
+    answer:1
+   },{
+    q:'They did not know where they ....... from.',
+    options:['had come','have come','has come','come'],
+    answer:1
+   },{
+    q:'He was an ...... swimmer, but was swept away by a strong ......',
+    options:['eligible; water','able; stream','old; river','expert; current'],
+    answer:4
+   },{
+    q:'The teacher gives many examples to....the idea contained in the poem.',
+    options:[' bring about','bring in','bring forth','bring out'],
+    answer:4
+   },{
+    q:'The more electricity you use, .....',
+    options:['your bill will be higher',' will your bill be higher','will be higher your bill','the higher your bill will be'],
+    answer:4
+   },{
+    q:'The rich parents decided to send their two sons to Eton, the stronghold of the.....of the rich.',
+    options:['parents','ancestry','pedigree','progeny'],
+    answer:4
+   },{
+    q:'She stood.....the crowd quite amazed.',
+    options:['in ','within','among',' into'],
+    answer:1
+   },{
+    q:'The magnificent.....temple was constructed by the Chinese.',
+    options:['eight-centuries-old','eight-century’s-old','old-eight centuries','eight-century-old'],
+    answer:4
+   },{
+    q:'There were two small rooms in the beach house, .....served as a kitchen.',
+    options:['the smaller of which','the smallest of which','the smaller of them','smallest of that'],
+    answer:3
+   },{
+    q:'Madhu has not been able to recall where.....',
+    options:['does she live.','she lived.','did she live','lived the girl.'],
+    answer:2
+   },{
+    q:'You.....mad if you think I’m going to show my answer-sheet.',
+    options:['are supposed to be','must be','will be','ought to be'],
+    answer:2
+   },{
+    q:'If I hadn’t come along at that moment, Rahim.....the one arrested instead of the real thief',
+    options:['might been','may have been','can have been','could have been'],
+    answer:4
+   },{
+    q:'Wheat is not native to India and barley.....',
+    options:[' isn’t either','is either','is neither','isn’t neither'],
+    answer:1
+   },{
+    q:'It’ll rain soon, ............ ?',
+    options:['won’t it','bought it','isn’t it','may it'],
+    answer:1
+   },{
+    q:'My book is the new one;............ is the torn one.',
+    options:['your','the book of you','yours','the book your'],
+    answer:3
+   },{
+    q:'They needn’t worry, ...........?',
+    options:['isn’t it','doesn’t it','don’t it','need they'],
+    answer:4
+   },{
+    q:'He is indifferent ............ praise and blame.',
+    options:['in','to','for','about'],
+    answer:2
+   },{
+    q:'King George V’s accession ............ the throne was celebrated with great pomp.',
+    options:['for','with','against','to'],
+    answer:4
+   },{
+    q:'We are all very indignant........... the injustice done to him.',
+    options:['for','of','to','at'],
+    answer:4
+   },{
+    q:'If she ............ a bird, she would fly.',
+    options:['is','are','were','was'],
+    answer:3
+   },{
+    q:'The greater the demand,............ the price.',
+    options:['higher','high','the higher','the high'],
+    answer:3
+   },{
+    q:'Canada does not require that U.S. citizens obtain passports to enter the country, and ............',
+    options:['Mexico does neither','Mexico doesn’t either','neither Mexico does','either does Mexico'],
+    answer:2
+   },{
+    q:' A person who .......on his own effort has the best chance to win',
+    options:['makes','puts','relies','runs'],
+    answer:3
+   },{
+    q:'When he died, Ramanujan....... behind 3 notebooks.',
+    options:['was leaving','had left','left','leaves'],
+    answer:2
+   },{
+    q:'For all his ....., he is a.......',
+    options:['wealth, miser','health, player','tricks, cheat','stupidity, fool'],
+    answer:1
+   },{
+    q:'In a classroom students are to be trained to love .......',
+    options:['each other',' all others','one another','altogether'],
+    answer:3
+   },{
+    q:'Mr. Obi put his whole life.......the work.',
+    options:['on','in','into','upon'],
+    answer:2
+   },{
+    q:'All decisions, ......., are likely to be taken by consensus',
+    options:['anyhow','forever','somehow','however'],
+    answer:4
+   },{
+    q:'Kumar....... boy swam across the sea for safety.',
+    options:['a 17-years-old','a 17-year-old','a 17-year-aged','the 17-year-old'],
+    answer:2
+   },{
+    q:'She is beautiful ....... brave',
+    options:['but','and','yet','so'],
+    answer:2
+   },{
+    q:'Gandhiji will ...... in history as one of the greatest men, that ever lived.',
+    options:['go by','go on','go down','go through'],
+    answer:3
+   },{
+    q:'All the applicants ...... and the results will be announced next week.',
+    options:['rank','are to rank','are to be ranked','are ranking'],
+    answer:3
+   },{
+    q:'The speaker did not properly space out his speech, but went on ........ one point only.',
+    options:['stressing','avoiding','devoting','decrying'],
+    answer:1
+   },{
+    q:'Tourists always enjoyed...... the setting Sun in the Darjeeling Hills.',
+    options:['to watch','watching','in seeing','seeing'],
+    answer:2
+   },{
+    q:'A ...... of Japanese artists stepped off the coach amidst a warm welcome.',
+    options:['troop','troupe','band','gang'],
+    answer:2
+   },{
+    q:'Today students should be reconciled ....... the way things are changing.',
+    options:['with','to','for','at'],
+    answer:1
+   },{
+    q:'Ramappa ...... as the mayor of the town and he will assume charge this Friday.',
+    options:['elects','elected','is elected','is electing'],
+    answer:3
+   },{
+    q:'As he proved inefficient the company ......him',
+    options:['rejected','ejected','evicted','expelled'],
+    answer:4
+   },{
+    q:'The cost of ...... is rising rapidly in this city',
+    options:['being','existing','surviving','living'],
+    answer:4
+   },{
+    q:'The meeting is ..... because the funds have not arrived.',
+    options:['put in','put off','put away','put out'],
+    answer:2
+   },{
+    q:'It is .... if we can organise another exam this month.',
+    options:[' doubtful','unlikely','impractical','unsure'],
+    answer:1
+   },{
+    q:'She was relieved to hear from the doctor that the tumour was not malignant; it was ____ .',
+    options:['exposed','benign','discovered','sizeable'],
+    answer:2
+   },{
+    q:'It took the child a long time to recover ______ the shock.',
+    options:['under','from',' over','about'],
+    answer:2
+   },{
+    q:'You have all come well prepared. I _____ you to pass this exam.',
+    options:[' wish','except','hope','expect'],
+    answer:4
+   },{
+    q:'Children enjoy _____ the TV programmes.',
+    options:['to see','to watch','to look at','watching'],
+    answer:4
+   },{
+    q:'The old man could not remember where he ......... his money.',
+    options:['deposits',' is depositing','had deposited','will deposit'],
+    answer:3
+   },{
+    q:'Hamid ........ in Mumbai for three years when his parents came to visit.',
+    options:['has lived','had lived','was living','had been living'],
+    answer:4
+   },{
+    q:'I have little time, so I can tell you only ............. what he said.',
+    options:[' shortly','briefly',' little of','briskly'],
+    answer:2
+   },{
+    q:'Two years have passed since he............. here.',
+    options:['has come','come','came','had come'],
+    answer:3
+   },{
+    q:'His wife has a twin who resembles her so much that at first he had great trouble telling ...................',
+    options:[' one from the other','one from another.','each other','who is which'],
+    answer:4
+   },{
+    q:'At great length, that night they ............. the feasibility of their plans',
+    options:['discussed about','discussed','discussed regarding','discussed on'],
+    answer:2
+   },
+   {
+    q:'Will those of you who have objection to this proposal ......put up your hands, please ?',
+    options:['discussed','being discussed','having discussed','discussing'],
+    answer:2
+   },{
+    q:'She had frequent toothaches. So she decided to ................',
+    options:['remove her teeth','removing her teeth','have her teeth removed',' having her teeth removed'],
+    answer:3
+   },{
+    q:'At one time, Mr. Nigel ............this supermarket',
+    options:['was owing','used to own','had owned','owned'],
+    answer:4
+   },{
+    q:'He was ............... accept the grudgingly given invitation.',
+    options:['not enough sensible to','sensible enough to','sensible enough not to','sensible enough to not'],
+    answer:3
+   },{
+    q:'The little girl was knocked down by a speeding car and she lost her _____ immediately.',
+    options:['conscience','conscientious',' conscious','consciousness'],
+    answer:4
+   },{
+    q:'They have had to put ____ the football match because of snow.',
+    options:['of','off','up ','on'],
+    answer:2
+   },{
+    q:'She found a few good cards in a shop and she bought ___ cards last night',
+    options:['those','that','them','this'],
+    answer:1
+   },{
+    q:'Ten miles ___ a long way to walk',
+    options:['are','is','are being','are not'],
+    answer:2
+   },{
+    q:'The mechanic ____ the vehicle since this morning',
+    options:['repaired','repairing','has been repairing','will be repairing'],
+    answer:3
+   },{
+    q:'I complimented him ___ his success in the examination.',
+    options:['at','on','about','for'],
+    answer:2
+   },{
+    q:'Security arrangements have been tightened up in all ____ areas.',
+    options:['sensible','sensual','sensitive','sensational'],
+    answer:3
+   },{
+    q:'The dramatist must cater _____the taste of the audience.',
+    options:['to','over','into','for'],
+    answer:4
+   },{
+    q:'Suitable steps are taken to bring______ the cost of living.',
+    options:['up ','over','on ','down'],
+    answer:4
+   },{
+    q:'If I had worked hard, I ____ very high marks in the examination.',
+    options:['scored','would score','could score','would have scored'],
+    answer:4
+   },{
+    q:' I am satisfied .......... his innocence.',
+    options:['at','with','for','of'],
+    answer:2
+   },{
+    q:'People like to work for organisation that takes interest in their personal and ..........growth.',
+    options:['social','physical','financia','professional'],
+    answer:4
+   },{
+    q:'Ram, along with the members of the family and that of his friend,........ a movie.',
+    options:['was watching','were watching','have been watching','watch'],
+    answer:1
+   },{
+    q:'The manager wanted to meet you.......... the theft in the office',
+    options:['referring to','with regard to','with reference to','in connection with'],
+    answer:4
+   },{
+    q:'I absolutely refuse to put ..........with that sort of conduct',
+    options:['up','on','off','out'],
+    answer:1
+   },{
+    q:'The boy was _____ of cheating in the examination',
+    options:['condemned','accused','charged','punished'],
+    answer:2
+   },{
+    q:'We have two telephone operators, _____ of them do you want ?',
+    options:['who','whom','which','what'],
+    answer:3
+   },{
+    q:'I have no _____ motive in offering this advice',
+    options:['posterior','interior','ulterior','exterior'],
+    answer:1
+   },{
+    q:' _____ politicians are always respected.',
+    options:['Conscious','Conscientious','Cautious','Carefree'],
+    answer:2
+   },{
+    q:'We will have to atone _____our misdeeds.',
+    options:['at','on','for','with'],
+    answer:3
+   },{
+    q:'I got used _____on the right when I was in the U.S. for two years.',
+    options:['driving','to drive','to driving','by driving'],
+    answer:3
+   },{
+    q:'Had you told me earlier I_____the meeting.',
+    options:['had attended','have attended','attended','would have attended'],
+    answer:4
+   },{
+    q:'The climate is not conducive_____ good health.',
+    options:['with','from','in ','to'],
+    answer:4
+   },{
+    q:'A dog lives in a _____.',
+    options:['burrow','coop','stable','kennel'],
+    answer:4
+   },{
+    q:'Many things have happened_____ I met you last.',
+    options:['before','when','from','since'],
+    answer:4
+   },{
+    q:'If ____ permits, we will go out for a walk.',
+    options:['climate','whether','weather','whither'],
+    answer:3
+   },{
+    q:'His persuasive tone was able to tackle the boy whom other teachers had found ____.',
+    options:[' peripatetic','obdurate','tenacious','squeamish'],
+    answer:2
+   },{
+    q:'I always fall ____ old friends in times of need.',
+    options:['over','through','back on','off'],
+    answer:3
+   },{
+    q:'The campers ____ their tents at the base of the mountain.',
+    options:['established','grounded','installed','pitched'],
+    answer:4
+   },{
+    q:'The party decided to take the shortest ____ to its destination.',
+    options:['root','route','distance','direction'],
+    answer:2
+   },{
+    q:'The manager needs to hold ____his anger.',
+    options:['on','with','down','back'],
+    answer:4
+   },{
+    q:'The girl was very pleased ____herself',
+    options:['in','on','over','with'],
+    answer:4
+   },{
+    q:'Desire ____ self-expression is one of the basic qualities of man.',
+    options:['for','on','by','over'],
+    answer:1
+   },{
+    q:'The farmers suffered because the monsoon did not arrive ____time.',
+    options:['at','by','on','after'],
+    answer:3
+   },{
+    q:'The bride settled ____ very well in the new environment.',
+    options:['on ','down','up','off'],
+    answer:2
+   },{
+    q:'Are you really desirous _____visiting Japan ?',
+    options:['of','in','to','about'],
+    answer:1
+   },{
+    q:'When Indians from the south move north, they find certain aspects of life quite ____ from their own.',
+    options:['strange','separate','different','divergent'],
+    answer:3
+   },{
+    q:'The sky is overcast, we _____the storm will soon burst.',
+    options:['expect',' hope','trust','suspect'],
+    answer:1
+   },{
+    q:'The National Anthem is _____at every official function.',
+    options:['uttered','sung','whispered','chanted'],
+    answer:2
+   },{
+    q:'The doctor took out his _____to examine the patient',
+    options:['horoscope','microscope','telescope','stethoscope'],
+    answer:4
+   },{
+    q:'The candidate’s exposition was____ for its brevity and clarity',
+    options:['complimentary','conspicuous','incomprehensible','remarkable'],
+    answer:4
+   },{
+    q:'The new India that Nehru led called itself a Sovereign _____Democratic Republic.',
+    options:['capitalist','revisionist','populist','Socialist'],
+    answer:4
+   },{
+    q:' _____ you work hard, you won’t be able to clear even the preliminaries.',
+    options:['If','Until','Unless','Lest'],
+    answer:3
+   },{
+    q:'Last year our company made a ____ of several lakhs of rupees.',
+    options:['profit','gain','rise','raise'],
+    answer:1
+   },{
+    q:'The food that an average Indian eats has been found to be deficient ________ vitamins and proteins.',
+    options:['of','from','with','in'],
+    answer:4
+   },{
+    q:'The patient is _______ of stomach ache',
+    options:['suffering','experiencing','complaining','afflicting'],
+    answer:3
+   },{
+    q:'A good teacher should ______responses from the students.',
+    options:['elicit','provoke','command','infer'],
+    answer:1
+   },{
+    q:'Had he taken his degree five years ago he ______ got a promotion by now',
+    options:['might','would have','will be','was'],
+    answer:2
+   },{
+    q:'There will be a rush for seats when the train _______.',
+    options:['will arrive','arrived','is arriving',' arrives'],
+    answer:4
+   },{
+    q:'He drove the car very fast,____.',
+    options:['did he ?','does he ?','didn’t he ?','was he ?'],
+    answer:3
+   },{
+    q:'He _______ wants to succeed in life must be prepared to work hard.',
+    options:['whoever','whom','who','whose'],
+    answer:3
+   },{
+    q:'It is time you ______ home',
+    options:['go','went','come','reach'],
+    answer:2
+   },{
+    q:'_______ a walk in the morning will improve your health',
+    options:['Going to','Go to','Go for','Going for'],
+    answer:4
+   },{
+    q:'Government must ______ the rise in prices.',
+    options:['cheque','check','cease','seize'],
+    answer:2
+   },{
+    q:'When I was speaking to Rani over the phone suddenly we were ____.',
+    options:['hung up','run out','broken down','cut off'],
+    answer:4
+   },{
+    q:'The farmer had ____ land and many servants.',
+    options:['very little','some','a lot of','many'],
+    answer:3
+   },{
+    q:'The tribes lived ____ customs different from anything the English had ever seen.',
+    options:['on','by','off','with'],
+    answer:2
+   },{
+    q:'The criminal together with his associates ____ arrested.',
+    options:['are','was','were','have'],
+    answer:2
+   },{
+    q:'By the time I reach America, it___ morning',
+    options:['is','would be','must be','was'],
+    answer:2
+   },{
+    q:'When he got married he ____ a life insurance policy.',
+    options:['took up','took out','took in','took over'],
+    answer:2
+   },{
+    q:'In the last few days, ____ to help him ?',
+    options:['anything has been done','is anything done','something is done','has anything been done'],
+    answer:4
+   },{
+    q:'While picking a rose she _____her hand on a thorn.',
+    options:['stung',' scratched','cut','damaged'],
+    answer:2
+   },{
+    q:'The child did not approve ____the father’s plan.',
+    options:[' to','by','of','with'],
+    answer:3
+   },{
+    q:'None of the food was wasted,_____',
+    options:['wasn’t ?','was it ?','weren’t ?','were it ?'],
+    answer:2
+   },{
+    q:'We warned her –––––– the danger',
+    options:['from','about','against','of'],
+    answer:3
+   },{
+    q:'We all laughed ––––––– the affair.',
+    options:['over','about','for','on'],
+    answer:2
+   },{
+    q:'The chairman, as well as the members, ____ to blame for this misfortune',
+    options:['are','were','is','has'],
+    answer:3
+   },{
+    q:'The streets are lighted –––––––electricity',
+    options:['with','by','on ','in'],
+    answer:2
+   },{
+    q:'Homoeopathic treatment, they say, cuts ––––––– the need for operation and risk from surgery',
+    options:['off','out','down','away'],
+    answer:3
+   },{
+    q:'My friends fail to see why I should ride the ––––––– horse just because I have won a prize',
+    options:['great','good','big','high'],
+    answer:4
+   },{
+    q:'By –––––––– united struggle, we may achieve success.',
+    options:['a','an','the','None of the above'],
+    answer:1
+   },{
+    q:'She feared that she __________',
+    options:['will fail','may fail','might fail','would fail'],
+    answer:3
+   },{
+    q:'He is the most generous man, I –––––– him for a long time.',
+    options:['knew','have known','know','had known'],
+    answer:2
+   },{
+    q:'The sudden change in his behaviour came as a surprise to me, I began __',
+    options:['to cut a sorry figure','to smell a rat','to turn a new leaf','to blow hot and cold'],
+    answer:2
+   },{
+    q:'The hotel was not too expensive,_____',
+    options:['was it ?','wasn’t it ?','is it ?','isn’t it ?'],
+    answer:1
+   },{
+    q:'Like humans, zoo animals also must have a dentist ______ their teeth',
+    options:['to fill','filled','filling','to be filled'],
+    answer:1
+   },{
+    q:'It was very kind of you to do the washing-up, but you ____it.',
+    options:['didn’t have to do','hadn’t to do','mightn’t have done','mustn’t have done'],
+    answer:4
+   },{
+    q:'He went ____ the sea alone.',
+    options:['in','to',' into','on'],
+    answer:2
+   },{
+    q:'The court ______ cognizance of the criminal’s words.',
+    options:['took','made','gave','allowed'],
+    answer:1
+   },{
+    q:'______ wins this civil war there will be little rejoicing at the victory.',
+    options:['Whichever','Whoever','Whatever','Wherever'],
+    answer:2
+   },{
+    q:'As he got older his belief in these principles did not ______.',
+    options:['wither','shake','waver','dither'],
+    answer:1
+   },{
+    q:'Everyone in this world is accountable to God _____ his actions.',
+    options:['about','for','to','over'],
+    answer:2
+   },{
+    q:'Your father used to be the principal of this college, ____ ?',
+    options:['did he ?','does he ?','didn’t he ?','doesn’t he ?'],
+    answer:3
+   },{
+    q:'A wise man profits ..... the mistakes of others.',
+    options:['through','from',' with ','by'],
+    answer:2
+   },{
+    q:'My friend has written a ..... account of his journey to the Mars.',
+    options:['factitious','factional',' fictional','factual'],
+    answer:4
+   },{
+    q:'Speed is ..... essence.',
+    options:[' in ','for','about','of'],
+    answer:4
+   },{
+    q:' I was washing my face as the insect ..... quietly into the bedroom.',
+    options:['crept','creeps','was creeping','has crept'],
+    answer:1
+   },{
+    q:'During the recent floods twothirds of our city ..... in ruins.',
+    options:['are','were','is','was'],
+    answer:4
+   },{
+    q:'I have ______ Lakshmi for the past twelve years.',
+    options:['know','knew','known','knows'],
+    answer:3
+   },{
+    q:'He did not qualify ______ the job.',
+    options:['for','to','against','with'],
+    answer:1
+   },{
+    q:'______ the last ten years we have been victims of abuse.',
+    options:['From','For','Before','Since'],
+    answer:2
+   },{
+    q:'The strike has been called ___.',
+    options:['of','at','off','up'],
+    answer:3
+   },{
+    q:'He is always angry ______ his children.',
+    options:['with','on','over','at'],
+    answer:1
+   },{
+    q:'The chairperson brushed_______ my suggestion.',
+    options:['out','over','aside','about'],
+    answer:3
+   },{
+    q:'She politely asked him _______',
+    options:['to leave her hand','to give up her hand','to release her hand','to let her hand go'],
+    answer:1
+   },{
+    q:'Unhygienic surroundings_______ health problems.',
+    options:['give rise to','bring into being','call for','set in'],
+    answer:1
+   },{
+    q:'The engineers ________ this bridge since last year.',
+    options:['have repaired','had repaired','have been repairing','are repairing'],
+    answer:3
+   },{
+    q:'There are some people who doubt the ________ of anything they see in a newspaper',
+    options:['credulity','possibility','veracity','existence'],
+    answer:3
+   },{
+    q:'He travelled all ______ the world when he was eighty years old',
+    options:['in','over','with','of'],
+    answer:2
+   },{
+    q:'Shivaji Maharaj fought ______every kind of aggression.',
+    options:['against','to','with','at'],
+    answer:1
+   },{
+    q:'Don’t depend _____ others; you must stand on your own feet',
+    options:['upon','on','to','for'],
+    answer:2
+   },{
+    q:'5. Our life promises a lot ______ pleasure and we must learn to enjoy it.',
+    options:['with','for','of','at'],
+    answer:3
+   },{
+    q:'The building is not safe and must be _____ down.',
+    options:['pull','pulling','pulled','pulls'],
+    answer:3
+   },{
+    q:'There is something wonderful_____ him.',
+    options:['of','about','for','inside'],
+    answer:2
+   },{
+    q:'The song in the play cannot be deleted as it is _____ to the story',
+    options:['intervened','innate','exacting','integral'],
+    answer:4
+   },{
+    q:'She remained a _____ all her life',
+    options:['spinster','bachelor','unmarried','single'],
+    answer:1
+   },{
+    q:'Do not stay in the grasslands after dark, as some animals become _____ when they see humans.',
+    options:['provoked','alerted','aggressive','threatened'],
+    answer:3
+   },{
+    q:'The company let me ____ time off work.',
+    options:['take','taking','to take','took'],
+    answer:1
+   },{
+    q:'I assume ____ with me',
+    options:['everyone agreeing','that everyone agrees','everyone to agree',' that everyone to agree'],
+    answer:2
+   },{
+    q:' _____ the rain forests is very important, if we do not want the flora and fauna found there to become extinct',
+    options:['Reserving','Destroying','Preserving','Maintaining'],
+    answer:3
+   },{
+    q:'If I had helped him, he _____.',
+    options:['will not be drowned','would not be drowned','will not have been drowned','would not have been drowned'],
+    answer:4
+   },{
+    q:'When will you hand ____ your assignment ?',
+    options:['in ','back','down','into'],
+    answer:1
+   },{
+    q:'The housewife _______ the cakes burning, and ran to switch off the oven.',
+    options:['smell','smells','smelt','smelling'],
+    answer:3
+   },{
+    q:' _______ an old legend, King Shirham lived in India.',
+    options:['In the event of','Due to','According to','In reference to'],
+    answer:3
+   },{
+    q:'_______ you leave now, you will be late.',
+    options:['Until','Till','Unless','Although'],
+    answer:3
+   },{
+    q:'The _______ were arrested for illegally hunting the bears.',
+    options:['poachers','rangers','soldiers','villagers'],
+    answer:1
+   },{
+    q:'If you had followed the rules, you _______ disqualified',
+    options:['will not be','would not be','will not have been','would not have been'],
+    answer:4
+   },{
+    q:'_______ your instructions, we have closed your bank account.',
+    options:['In lieu of','With regard to',' In accordance with','On account of'],
+    answer:3
+   }
+  
+   
+  
+  ]
+
+  totalQuestionSpan.innerHTML=10;
+  function load(){
+        questionNumberSpan.innerHTML=index+1;
+         question.innerHTML=questions[questionIndex].q;     
+         op1.innerHTML=questions[questionIndex].options[0];
+         op2.innerHTML=questions[questionIndex].options[1];
+         op3.innerHTML=questions[questionIndex].options[2];
+         op4.innerHTML=questions[questionIndex].options[3];
+         index++;
+  }
+  
+  function check(element){
+   if(element.id==questions[questionIndex].answer){
+    element.classList.add("correct");
+    updateAnswerTracker("correct")
+    score++;
+   // console.log("score:"+score)
+   }
+   else{
+    element.classList.add("wrong");
+    updateAnswerTracker("wrong")
+
+   }
+   disabledOptions()
+  }
+   
+  function disabledOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.add("disabled");
+      if(options[i].id==questions[questionIndex].answer){
+       options[i].classList.add("correct");
+      }
+
+     }
+  }
+  
+  function enableOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.remove("disabled","correct","wrong");
+     }
+  }
+
+  function validate(){
+      if(!options[0].classList.contains("disabled")){
+       // alert("Please Selecto one option")
+	   enableOptions();
+       randomQuestion();
+      }
+      else{
+       enableOptions();
+       randomQuestion();
+      }
+  }
+
+  function next(){
+    validate();
+  }
+   
+  function randomQuestion(){
+   let randomNumber=Math.floor(Math.random()*questions.length);
+   let hitDuplicate=0;
+       if(index==10){
+        quizOver();
+       }
+       else{
+         if(myArray.length>0){
+             for(let i=0; i<myArray.length; i++){
+               if(myArray[i]==randomNumber){
+                  hitDuplicate=1;
+                  break;
+               }
+             }
+             if(hitDuplicate==1){
+              randomQuestion();
+             }
+             else{
+               questionIndex=randomNumber;   
+              load();
+              myArr.push(questionIndex);
+             }
+         }
+         if(myArray.length==0){
+           questionIndex=randomNumber;   
+           load();
+           myArr.push(questionIndex);
+         }
+
+       myArray.push(randomNumber);
+       
+      }
+  }
+      
+  function answerTrakcer(){
+     for(let i=0; i<10; i++){
+      const div=document.createElement("div")
+         answerTrackerContainer.appendChild(div);
+     }
+  }
+
+ function updateAnswerTracker(classNam){
+   answerTrackerContainer.children[index-1].classList.add(classNam);
+ }
+
+ function quizOver(){
+    document.querySelector(".quiz-over").classList.add("show");
+    correctAnswerSpan.innerHTML=score;
+    totalQuestionSpan2.innerHTML=10;
+    percentage.innerHTML=(score/10)*100 + "%";
+ }
+ 
+ function tryAgain(){
+     window.location.reload();
+ }
+
+ window.onload=function(){
+  randomQuestion();
+  answerTrakcer();
+ 
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+ 
+<style>
+body{
+ margin:0;
+  background-image: linear-gradient(to bottom right, red, yellow);
+  font-family: sans-serif;
+}
+
+.question-number,
+.question,
+.options,
+.button,
+.answers-tracker{
+ float: left;
+ width: 100%;
+}
+.question-number h3{
+text-align: center;
+ color:green;
+ border-bottom: 1px solid #ccc;
+ margin:0;
+ padding-bottom:10px;
+}
+.question {
+text-align: center;
+ font-size:22px;
+ color:#fff;
+ text-style:bold;
+
+ padding:20px 0;
+ 
+}
+
+.options div{
+  background-color: #cccccc;
+  font-size:16px;
+  color:000000;
+  
+  margin-bottom:10px;
+  border-radius:5px;
+  padding:10px;
+  position: relative;
+  overflow:hidden;
+  cursor: pointer;
+}
+.options div.disabled{
+ pointer-events: none;
+}
+.options div.correct{
+ z-index: 1;
+ color: #fff;
+}
+.options div.correct::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color: green;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+.options div.wrong{
+ z-index: 1;
+ color: #fff;
+}
+.options div.wrong::before{
+ content: '';
+ position: absolute;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-color:red;
+ z-index: -1;
+ 
+ animation: animateBackground 1s ease;
+ animation-fill-mode: forwards;
+}
+@keyframes animateBackground{
+ 0%{
+  transform: translateX(-100%);
+ }
+ 100%{
+  transform: translateX(0%); 
+ }
+}
+
+
+.button .btn{
+ padding:15px 50px;
+ border-radius:5px;
+ cursor: pointer;
+ width: 100%;
+ background-color:green;
+ font-size:16px;
+   justify-content: center;
+  
+ color:#ffffff;
+ border: none;
+ display: inline-block;
+ margin:15px 0 20px;
+}
+
+
+
+.quiz-over{
+ position: fixed;
+ left:0;
+ top:0;
+ width: 100%;
+ height: 100%;
+ background-image: linear-gradient(to bottom right, red, yellow);
+ z-index: 10;
+ display: none;
+ align-items: center;
+ justify-content: center;
+}
+.quiz-over.show{
+ display: flex;
+}
+.quiz-over .box{
+ background-color: #009688;
+ padding:30px;
+ border-radius:10px;
+ text-align: center;
+ flex-basis: 700px;
+ max-width:700px;
+ color:#ffffff;
+}
+
+.quiz-over .box h1{
+ font-size:36px;
+ margin:0 0 20px;
+}
+
+.quiz-over .box button{
+ padding:15px 50px;
+ border:none;
+ background-color:#FF9800;
+ border-radius:5px;
+ font-size:16px;
+ margin:15px 0 20px;
+ color:#ffffff;
+}
+
+</style>
+</head>
+<body>
+     <div class="quizContainer container-fluid well well-lg">
+    <div class="question-number">
+       <h3><b>Question <span class="question-num-value"></span> of <span class="total-question"></span></b></h3>
+    </div>
+    <div class="question">
+      
+    </div>
+    <div class="options">
+       <div id="1" class="option1" onclick="check(this)"></div>
+       <div id="2" class="option2" onclick="check(this)"></div>
+       <div id="3" class="option3" onclick="check(this)"></div>
+       <div id="4" class="option4" onclick="check(this)"></div>
+    </div>
+    <div class="button">
+       <button type="button" class="btn" onclick="next()">Next</button>
+    </div>
+    <div class="answers-tracker">
+       
+    </div>
+
+ 
+ <div class="quiz-over">
+   <div class="box">
+     <h1>
+       Good Job<br>
+      You Correct! <span class="correct-answers"></span> out of <span class="total-question2"></span>  <br>
+      Your percentage is <span class="percentage"></span>.
+     </h1>
+     <button type="button" onclick="tryAgain()">TryAgain</button>
+   </div>
+ </div>
+</div>
+<script>
+  
+  const options=document.querySelector(".options").children;
+  const answerTrackerContainer=document.querySelector(".answers-tracker");
+  const questionNumberSpan=document.querySelector(".question-num-value");
+  const totalQuestionSpan=document.querySelector(".total-question");
+  const correctAnswerSpan=document.querySelector(".correct-answers");
+  const totalQuestionSpan2=document.querySelector(".total-question2");
+  const percentage=document.querySelector(".percentage");
+  const question=document.querySelector(".question");
+  const op1=document.querySelector(".option1");
+  const op2=document.querySelector(".option2");
+  const op3=document.querySelector(".option3");
+  const op4=document.querySelector(".option4");
+  let questionIndex;
+  let index=0;
+  let myArray=[];
+  let myArr=[];
+  let score=0;
+
+  // questions and options and answers
+
+  const questions=[
+   {
+    q:'OBNOXIOUS (Synonyms)',
+    options:[' depressing','disgusting','arrogant','filthy'],
+    answer:2
+   },
+   {
+    q:'COVENANT (Synonyms)',
+    options:['case','coupon','contract','settlement'],
+    answer:3
+   },
+   
+   {
+    q:'DEFERENCE (Synonyms)',
+    options:['indifference',' sympathy','respect','flattery'],
+    answer:3
+   },
+   {
+    q:'ABROGATE (Synonyms)',
+    options:['repeal',' destroy','delay','dismiss'],
+    answer:1
+   },
+   {
+    q:'INTREPID (Synonyms)',
+    options:['ambitious',' determined','talkative','fearless'],
+    answer:4
+   },{
+    q:'GRANDEUR (Synonyms)',
+    options:['magnificence',' admiration','happiness','awe'],
+    answer:1
+   },{
+    q:'INCEPTION (Synonyms)',
+    options:[' initiative','beginning',' initial','origin'],
+    answer:2
+   },{
+    q:'COLOSSAL (Synonyms)',
+    options:['famous','vigorous','energetic','enormous'],
+    answer:4
+   },{
+    q:'PARADOX (Synonyms)',
+    options:['Paradise','question','puzzle','challenge'],
+    answer:3
+   },{
+    q:'PROLIFERATE (Synonyms)',
+    options:['progression',' prohibit',' stipulate','reproduce'],
+    answer:4
+   },{
+    q:'CENSURE (Synonyms)',
+    options:['criticize','appreciate','blame','abuse'],
+    answer:1
+   },{
+    q:'DILIGENT (Synonyms)',
+    options:['industrious','indifferent','intelligent','energetic'],
+    answer:1
+   },{
+    q:'CONTEMPLATION (Synonyms)',
+    options:['consideration','meditation','deliberation','speculation'],
+    answer:2
+   },{
+    q:'ADULATION (Synonyms)',
+    options:['duration','argument','flattery','institution'],
+    answer:3
+   },{
+    q:'QUIVER (Synonyms)',
+    options:['quarrel','quicken','waver','tremble'],
+    answer:4
+   },{
+    q:'BEAUTIFUL (Synonyms)',
+    options:['handsome','alluring','appealing','attractive'],
+    answer:1
+   },{
+    q:'MOMENTOUS (Synonyms)',
+    options:['important','temporary',' fleeting',' monumental'],
+    answer:1
+   },
+   
+   {
+    q:'INFATUATION (Synonyms)',
+    options:['emotion','passion','imagination','compassion'],
+    answer:2
+   },
+   {
+    q:'CONSIGNEE (Synonyms)',
+    options:['delegate','representative','nominee',' messenger'],
+    answer:3
+   },{
+    q:'TRAMP (Synonyms)',
+    options:['wanderer','cheat','traveller','pilgrim'],
+    answer:1
+   },{
+    q:' IRREVERENCE (Synonyms)',
+    options:['disrespect','cruelty','unkindness',' invalidity'],
+    answer:1
+   },{
+    q:'AMICABLE (Synonyms)',
+    options:['poisonous',' friendly','satisfying',' heartening'],
+    answer:2
+   },{
+    q:'PRUDENT (Synonyms)',
+    options:['skilled','experienced','cautious','criminal'],
+    answer:2
+   },{
+    q:'PANACEA (Synonyms)',
+    options:['flatter',' praise',' inactivity',' cure-all'],
+    answer:3
+   },{
+    q:'BENEVOLENCE (Synonyms)',
+    options:['ill-will',' morbidity',' kindness',' vision'],
+    answer:3
+   },{
+    q:'VINDICATE (Synonyms)',
+    options:['open','ventilate','justify','recommend'],
+    answer:3
+   },{
+    q:'OCCULT (Synonyms)',
+    options:['religious','unnatural','supernatural','strong'],
+    answer:3
+   },{
+    q:'MENACE (Synonyms)',
+    options:['request','prayer','threat',' curse'],
+    answer:3
+   },{
+    q:'DELINEATE (Synonyms)',
+    options:['expand',' portray','explain',' argue'],
+    answer:3
+   },{
+    q:'ABROGATE (Synonyms)',
+    options:['elope','gate-crash','abolish','destroy'],
+    answer:3
+   },{
+    q:'SUCCESSIVE (Synonyms)',
+    options:['rapid','victorious','beneficent','consecutive'],
+    answer:4
+   },{
+    q:'RAVAGE (Synonyms)',
+    options:['destroy','break','demolish','abolish'],
+    answer:3
+   },{
+    q:'SUPERSTITIOUS (Synonyms)',
+    options:['pious','traditional','irrational','sacred'],
+    answer:3
+   },{
+    q:'MENTOR (Synonyms)',
+    options:['guide','genius','stylist','philosopher'],
+    answer:1
+   },{
+    q:'GARNISH (Synonyms)',
+    options:['paint','adorn','garner','banish'],
+    answer:2
+   },{
+    q:'INFRUCTUOUS(Synonyms)',
+    options:['meaningless','unnecessary','redundant','fruitless'],
+    answer:4
+   },{
+    q:'FIDELITY (Synonyms)',
+    options:['affection','allegiance','accuracy','loyalty'],
+    answer:4
+   },{
+    q:'GRUFF(Synonyms)',
+    options:['hard','rough','tough','sturdy'],
+    answer:2
+   },
+   {
+    q:'DOLEFUL (Synonyms)',
+    options:['mournful','sober','regretful','cheerless'],
+    answer:1
+   },{
+    q:'FATAL (Synonyms)',
+    options:['terrible','deadly','poisonous','wrong'],
+    answer:2
+   },{
+    q:'ELUDE (Synonyms)',
+    options:['allure ','leave','deceive','escape'],
+    answer:4
+   },{
+    q:'PREMONITION (Synonyms)',
+    options:[' insight','uncertainty','forewarning','scope'],
+    answer:3
+   },{
+    q:'DEROGATORY (Synonyms)',
+    options:[' injurious','shattering',' destructive','disparaging'],
+    answer:4
+   },{
+    q:'NOMADIC (Synonyms)',
+    options:['fighting','rare','strange','wandering'],
+    answer:4
+   },{
+    q:' RESTIVE (Synonyms)',
+    options:['rested','restless','limited','limitless'],
+    answer:2
+   },{
+    q:'ERRONEOUSLY (Synonyms)',
+    options:['previously','effectively','wrongly','evidently'],
+    answer:3
+   },{
+    q:'ESTRANGED (Synonyms)',
+    options:['jealous','angry','separated','suspicious'],
+    answer:3
+   },{
+    q:'CAPITULATE (Synonyms)',
+    options:['repeat','execute','summarize','surrender'],
+    answer:4
+   },{
+    q:'PROPITIATE (Synonyms)',
+    options:['conform','appease','influence','approach'],
+    answer:2
+   },{
+    q:'CEREMONIAL (Synonyms)',
+    options:['religious','formal','official','pompous'],
+    answer:2
+   },{
+    q:'OBSESSION (Synonyms)',
+    options:['pre-occupation','suspicion','frustration','dejection'],
+    answer:1
+   },{
+    q:'DILATE (Synonyms)',
+    options:['spin','weaken','widen','push'],
+    answer:3
+   },{
+    q:'DUPLICATION (Synonyms)',
+    options:['breed','reproduction','print','copying'],
+    answer:4
+   },{
+    q:'PRIORITY (Synonyms)',
+    options:['urgency','protocol','precedence ','necessity'],
+    answer:3
+   },{
+    q:'FLUTTER (Synonyms)',
+    options:['soar','agitate','change','float'],
+    answer:4
+   },{
+    q:'COMMAND (Synonyms)',
+    options:['lead ','instruct','manage','supervise'],
+    answer:2
+   },{
+    q:'GNOME (Synonyms)',
+    options:['giant','dwarf','native','alien'],
+    answer:2
+   },{
+    q:'ABLUTION (Synonyms)',
+    options:['censure','forgiveness','absolution','washing'],
+    answer:4
+   },{
+    q:'SURMOUNT (Synonyms)',
+    options:['discount','surround','overcome','capture'],
+    answer:3
+   },{
+    q:'TORPID (Synonyms)',
+    options:[' insipid','stupid','sensitive','inactive'],
+    answer:4
+   },{
+    q:'SELECTION (Synonyms)',
+    options:['denial','preference',' refusal','display'],
+    answer:2
+   },{
+    q:'OSTENTATION (Synonyms)',
+    options:['pomp ','pretence','abundance','plenty'],
+    answer:1
+   },{
+    q:'CONVICT (Synonyms)',
+    options:['adventurer','fugitive','criminal','impostor'],
+    answer:3
+   },{
+    q:'ITINERANT (Synonyms)',
+    options:['frequent use of the word it','anything involving repetition','plan for a proposed journey','travelling from place to place'],
+    answer:4
+   },{
+    q:'TRANSPARENT (Synonyms)',
+    options:['verbose','involved',' witty','lucid'],
+    answer:4
+   },{
+    q:'ENLIVEN (Synonyms)',
+    options:['dampen','cheer','depress','subdue'],
+    answer:2
+   },{
+    q:'HAUGHTY (Synonyms)',
+    options:['humble','subservient','meek','conceited'],
+    answer:4
+   },{
+    q:'DEMENTED (Synonyms)',
+    options:[' reasonable','sensible','idiotic','lucid'],
+    answer:3
+   },{
+    q:'ILL-BRED (Synonyms)',
+    options:['uncouth','well-bred','courteous','mannerly'],
+    answer:1
+   },{
+    q:'KNACK (Synonyms)',
+    options:['dexterity','awkwardness','clumsiness','disability'],
+    answer:1
+   },{
+    q:'LACONIC (Synonyms)',
+    options:[' loquacious','concise','rambling','verbose'],
+    answer:2
+   },{
+    q:'KNAVISH (Synonyms)',
+    options:['honourable','noble','trustworthy ','unscrupulous'],
+    answer:4
+   },{
+    q:'ASSERTIVE (Synonyms)',
+    options:['unassertive','timorous','domineering','unobtrusive'],
+    answer:3
+   },{
+    q:'CAPRICIOUS (Synonyms)',
+    options:['whimsical','unmovable','decisive','stable'],
+    answer:1
+   },{
+    q:'DEXTERITY (Synonyms)',
+    options:['incompetence','gaucheness','adroitness','ineptitude'],
+    answer:3
+   },{
+    q:'OBSTINATE (Synonyms)',
+    options:['stubborn','pretty','silly','clever'],
+    answer:1
+   },{
+    q:'ALERT (Synonyms)',
+    options:['hostile','watchful',' brave','quick'],
+    answer:2
+   },{
+    q:'ACCEDE (Synonyms)',
+    options:['consent','access','assess','proceed'],
+    answer:1
+   },{
+    q:' SUPERANNUATED (Synonyms)',
+    options:['experienced','accepted','retired','senile'],
+    answer:3
+   },{
+    q:'AUDACITY (Synonyms)',
+    options:['strength','boldness','asperity','fear'],
+    answer:2
+   },{
+    q:'DECREPITUDE (Synonyms)',
+    options:['disease','coolness',' crowd','feebleness'],
+    answer:4
+   },{
+    q:'TRANSITION (Synonyms)',
+    options:['position','translation','change','movement'],
+    answer:3
+   },{
+    q:'ACCUSED (Synonyms)',
+    options:['indicated','indicted',' induced','instigated'],
+    answer:2
+   },{
+    q:'BECKONED (Synonyms)',
+    options:['accused','called','sent ','acquitted'],
+    answer:2
+   },{
+    q:'GENUINE (Synonyms)',
+    options:['generous','healthy','natural','original'],
+    answer:4
+   },{
+    q:'SOMBRE (Synonyms)',
+    options:['gloomy','quiet','serious','sleepy'],
+    answer:1
+   },{
+    q:'REGRESS (Synonyms)',
+    options:[' deteriorate','Degenerate',' backslide','lapse'],
+    answer:3
+   },{
+    q:'TOXIC (Synonyms)',
+    options:['bitter','foul-smelling','remedia','poisonous'],
+    answer:4
+   },{
+    q:'YARDSTICK (Synonyms)',
+    options:['summation','size',' statistics','standard'],
+    answer:4
+   },{
+    q:'LITTLE (Synonyms)',
+    options:['trivial','petty',' sample','simple'],
+    answer:1
+   },{
+    q:'AVARICE (Synonyms)',
+    options:['generosity','envy','greed','hatred'],
+    answer:3
+   },{
+    q:'AUGUST (Synonyms)',
+    options:['majestic','important','difficult','huge'],
+    answer:1
+   },{
+    q:'DECIMATED (Synonyms)',
+    options:['denounced','destroyed','successful','depressed'],
+    answer:2
+   },{
+    q:'HURDLE (Synonyms)',
+    options:['obstacle','ban','hedge','relay'],
+    answer:1
+   },{
+    q:'RARE (Synonyms)',
+    options:['common','usual','scarce','few'],
+    answer:3
+   },{
+    q:'APPOSITE (Synonyms)',
+    options:['contrary','bitte','appropriate','misleading'],
+    answer:3
+   },{
+    q:'SCORN (Synonyms)',
+    options:['SCORN','laugh','condemn','criticize'],
+    answer:3
+   },{
+    q:'IMPIOUS (Synonyms)',
+    options:['holy ','mischievous','shrewd','irreverent'],
+    answer:4
+   },{
+    q:'FREELANCE (Synonyms)',
+    options:['self-betrayed','self-centred','self-employed ','self-driven'],
+    answer:3
+   },{
+    q:'SLITHER (Synonyms)',
+    options:['slide ','move','shake','slip'],
+    answer:1
+   },{
+    q:'ACCOUTREMENTS (Synonyms)',
+    options:['relatives','companions','calculations','equipment'],
+    answer:4
+   },{
+    q:'VERACITY (Synonyms)',
+    options:['freedom','truth','wisdom','loyalty'],
+    answer:2
+   },{
+    q:'INCESSANTLY (Synonyms)',
+    options:['continuously','inevitably','regularly','indiscreetly'],
+    answer:1
+   },{
+    q:'HERALDED (Synonyms)',
+    options:['clapped','proclaimed','protested','rewarded'],
+    answer:1
+   },{
+    q:'DETRIMENTAL (Synonyms)',
+    options:['deplorable','fundamental','harmful','disgraceful'],
+    answer:3
+   },{
+    q:'COLOSSAL (Synonyms)',
+    options:['gigantic','colourfu','beautiful','fantastic'],
+    answer:1
+   },{
+    q:'STUBBORN (Synonyms)',
+    options:['timid','arrogant','adamant','angry'],
+    answer:3
+   },{
+    q:'INVARIABLE (Synonyms)',
+    options:['usual','universal','constant','similar'],
+    answer:3
+   },{
+    q:'INDICTMENT (Synonyms)',
+    options:['revelation','acquittal','refusal','accusation'],
+    answer:4
+   },{
+    q:'DULCET (Synonyms)',
+    options:['sweet','dull','hard ','sour'],
+    answer:1
+   },{
+    q:'DUBIOUS (Synonyms)',
+    options:['doubtful','disputable','duplicate','dangerous'],
+    answer:1
+   },{
+    q:'FLABBERGASTED (Synonyms)',
+    options:['scared','embarrassed','dumbfounded','humiliated'],
+    answer:3
+   },{
+    q:'ETERNAL (Synonyms)',
+    options:['innumerable','unmeasurable','prolonged','perpetual'],
+    answer:4
+   },{
+    q:'GENUINE (Synonyms)',
+    options:['authentic','legitimate','reliable','pure'],
+    answer:1
+   },{
+    q:'OBSCENE (Synonyms)',
+    options:['indecent','incorrigible','ridiculous','intolerable'],
+    answer:1
+   },{
+    q:'INDIGNATION (Synonyms)',
+    options:['hatred','anger','disapproval','contempt'],
+    answer:2
+   },{
+    q:'ACRONYM (Synonyms)',
+    options:['A word with two or more meanings','A word of new coinage','A word formed by the initial letters of words','A word of picturesque effect'],
+    answer:3
+   },{
+    q:'METICULOUS (Synonyms)',
+    options:['interfere','courage','agreement','careful'],
+    answer:4
+   },{
+    q:'RESCIND (Synonyms)',
+    options:['change','revoke','repeat','reconsider'],
+    answer:2
+   },{
+    q:'ANTIPATHY (Synonyms)',
+    options:['dishonesty','disturbance','demonstration','dislike'],
+    answer:4
+   },{
+    q:'IILICIT (Synonyms)',
+    options:['immoral','illegal',' ineligible','illegible'],
+    answer:2
+   },{
+    q:'FLAIR (Synonyms)',
+    options:['talent','tendency','bias','need'],
+    answer:1
+   },{
+    q:'CONSERVATION (Synonyms)',
+    options:['preservation','respiration','correction','confusion'],
+    answer:1
+   },{
+    q:'ABYSMAL (Synonyms)',
+    options:['sickening','gloomy','sad ','bottomless'],
+    answer:4
+   },{
+    q:'SALIENT (Synonyms)',
+    options:['valiant','variant','prudent','prominent'],
+    answer:4
+   },{
+    q:'DECAMP (Synonyms)',
+    options:['move','encamp','flee','hide'],
+    answer:3
+   },{
+    q:'PHILANTHROPIST (Synonyms)',
+    options:['benefactor','beneficiary','matron','sponsor'],
+    answer:1
+   },{
+    q:'EXOTIC (Synonyms)',
+    options:['alien ','strange','rare','grand'],
+    answer:2
+   },{
+    q:'INCAPACITATE (Synonyms)',
+    options:['cripple','strengthen',' imprison','invent'],
+    answer:1
+   },{
+    q:'CONGREGATION (Synonyms)',
+    options:['concentration','meeting','discussion','judgement'],
+    answer:2
+   },{
+    q:'IRREPROACHABLE (Synonyms)',
+    options:['remarkable','extraordinary','faultless','immense'],
+    answer:3
+   },{
+    q:'FELICITY (Synonyms)',
+    options:['prosperity','honesty',' bliss ','sorrow'],
+    answer:3
+   },{
+    q:'KNAVE (Synonyms)',
+    options:['emperor','enchanter','soldier','scoundrel'],
+    answer:4
+   },{
+    q:'FRONTIER (Synonyms)',
+    options:['edge','landmark','boundary','corner'],
+    answer:3
+   },{
+    q:'ROUT (Synonyms)',
+    options:['death','defeat','loss ','crash'],
+    answer:2
+   },{
+    q:'FOREGO (Synonyms)',
+    options:['renounce','disown','leave ','accumulate'],
+    answer:3
+   },{
+    q:'PRODIGAL (Synonyms)',
+    options:[' huge ','prodigious','enormous','wasteful'],
+    answer:4
+   },{
+    q:'RECIPIENTS (Synonyms)',
+    options:['creators','donors','receivers','instigators'],
+    answer:3
+   },{
+    q:'IMPOST (Synonyms)',
+    options:[' fertilizer','dispatch',' tax','postage'],
+    answer:3
+   },{
+    q:'COARSE (Synonyms)',
+    options:['academic','grain','rough','training'],
+    answer:3
+   },{
+    q:'LUXURIANT (Synonyms)',
+    options:['luxury-loving','lovely','rich ','abundant'],
+    answer:4
+   },{
+    q:'CANTANKEROUS (Synonyms)',
+    options:['cancerous','ferocious','quarrelsome','fissiparous'],
+    answer:3
+   },{
+    q:'ONUS (Synonyms)',
+    options:['sadness','happiness','responsibility','criticism'],
+    answer:3
+   },{
+    q:'DERISION (Synonyms)',
+    options:['humiliation','embarrassment','ridicule','condemnation'],
+    answer:3
+   },{
+    q:'TRITE (Synonyms)',
+    options:['commonplace','clever','brief','impudent'],
+    answer:1
+   },{
+    q:'DEBACLE (Synonyms)',
+    options:['decline','downfall','discomfiture',' degeneration'],
+    answer:2
+   },{
+    q:'OSTRACISE (Synonyms)',
+    options:['banish','belittle','beguile','besiege'],
+    answer:1
+   },{
+    q:'PROPHYLACTIC (Synonyms)',
+    options:['antagonistic','toxic','preventive','purgative'],
+    answer:3
+   },{
+    q:'CODDLE (Synonyms)',
+    options:['huddle','satisfy','protect','cheat'],
+    answer:2
+   },{
+    q:'FLIMSY (Synonyms)',
+    options:['funny','irrational','weak ','partisan'],
+    answer:3
+   },{
+    q:'FATUOUS (Synonyms)',
+    options:[' fastidious','fantastic',' funny ','silly'],
+    answer:4
+   },{
+    q:'ARTFUL (Synonyms)',
+    options:['artistic','cunning','cunning','attractive'],
+    answer:2
+   },{
+    q:'PROPINQUITY (Synonyms)',
+    options:['propensity','prosperity','nearness','foresight'],
+    answer:3
+   },{
+    q:'PROMISCUOUS (Synonyms)',
+    options:['conspicuous','virtuous','indiscriminate','spontaneous'],
+    answer:3
+   },{
+    q:' IRASCIBLE (Synonyms)',
+    options:['temperamental',' envious','angry','irritable'],
+    answer:4
+   },{
+    q:' ILLICIT (Synonyms)',
+    options:['unlawful','disgraceful',' improper','infamous'],
+    answer:1
+   },{
+    q:'OBSTINATE (Synonyms)',
+    options:['antagonistic','abstruse',' intrinsic','stubborn'],
+    answer:4
+   },{
+    q:'DANGEROUS (Synonyms)',
+    options:['safe','strong','hazardous','secure'],
+    answer:3
+   },{
+    q:'CONFIDENTIAL (Synonyms)',
+    options:[' obvious','honest','secret','accurate'],
+    answer:3
+   },{
+    q:'CENSURE (Synonyms)',
+    options:['criticise','warn','advise','evaluate'],
+    answer:1
+   },{
+    q:'CONTROVERT (Synonyms)',
+    options:['subvert','indict','contradict','confuse'],
+    answer:3
+   },{
+    q:'VIRULENT (Synonyms)',
+    options:['defunct','deadly','daring','deceptive'],
+    answer:2
+   },{
+    q:'SPIRITED (Synonyms)',
+    options:['admirable','adaptable','advanced','ardent'],
+    answer:4
+   },{
+    q:'EXECRATE (Synonyms)',
+    options:['curse','deplore','denounce','desecrate'],
+    answer:1
+   },{
+    q:'PERQUISITE (Synonyms)',
+    options:['incentive','privilege','bonus','reward'],
+    answer:2
+   },{
+    q:' BENEVOLENT (Synonyms)',
+    options:['beneficial','kind','helpful','supportive'],
+    answer:2
+   },{
+    q:'ANCESTORS (Synonyms)',
+    options:['extinct tribes','relatives','forefathers','old people'],
+    answer:3
+   },{
+    q:'EMBRACE (Synonyms)',
+    options:['impress','except','embarrass','accept'],
+    answer:4
+   },{
+    q:'MEEK (Synonyms)',
+    options:['light-hearted','serious','submissive','benign'],
+    answer:3
+   },{
+    q:'SUFFICIENT (Synonyms)',
+    options:['full ','complete','enough','less'],
+    answer:3
+   },{
+    q:'LUCIDITY (Synonyms)',
+    options:['fluidity','politeness','clarity','fluency'],
+    answer:3
+   },{
+    q:'INDICT (Synonyms)',
+    options:['implicate','elude','charge','manifest'],
+    answer:3
+   },{
+    q:'APPRAISE (Synonyms)',
+    options:['accuse','praise','appreciate','judge'],
+    answer:4
+   },{
+    q:'DELUGE (Synonyms)',
+    options:['confusion','deception','flood','weapon'],
+    answer:3
+   },{
+    q:'PREPONDERANCE (Synonyms)',
+    options:['pre-eminence','dominance','domineering','preoccupation'],
+    answer:2
+   },{
+    q:'BARREN (Synonyms)',
+    options:[' good ','wholesome','unproductive','profitable'],
+    answer:3
+   },{
+    q:'INFAMY (Synonyms)',
+    options:['notoriety','glory','integrity','familiarity'],
+    answer:1
+   },{
+    q:'INTREPID (Synonyms)',
+    options:['hesitant','fearless','extrovert','rash'],
+    answer:2
+   },{
+    q:'PRODIGAL (Synonyms)',
+    options:['exclusive','productive','lavish','carefree'],
+    answer:3
+   },{
+    q:'PERSPICUOUS (Synonyms)',
+    options:['relevant','precise','brief','clear'],
+    answer:2
+   },{
+    q:'LOQUACIOUS (Synonyms)',
+    options:['talkative','slow','content','unclear'],
+    answer:1
+   },{
+    q:'VINDICTIVE (Synonyms)',
+    options:['imaginative','accusative','spiteful','aggressive'],
+    answer:3
+   },{
+    q:'INCLEMENT (Synonyms)',
+    options:['selfish','active','unfavourable','inactive'],
+    answer:3
+   },{
+    q:'GENIAL (Synonyms)',
+    options:['cordial','unselfish','careful','specific'],
+    answer:1
+   },{
+    q:'ACCRUE (Synonyms)',
+    options:['accumulate','accommodate','grow','suffice'],
+    answer:1
+   },{
+    q:'POIGNANT (Synonyms)',
+    options:['showy','sad','silly','snobbish'],
+    answer:2
+   },{
+    q:'QUERULOUS (Synonyms)',
+    options:['critical','curious','complaining','ambiguous'],
+    answer:3
+   },{
+    q:'AUDACIOUS (Synonyms)',
+    options:['brilliant','powerful','bold ','frightening'],
+    answer:3
+   },{
+    q:'PERILOUS (Synonyms)',
+    options:['hazardous','rigorous','resilient','requisite'],
+    answer:1
+   },{
+    q:' REVERIE (Synonyms)',
+    options:['determination','day-dream','reality','realization'],
+    answer:2
+   },{
+    q:'FLAUNT (Synonyms)',
+    options:['cut ','deceive','exhibit','blame'],
+    answer:3
+   },{
+    q:'SUBJUGATE (Synonyms)',
+    options:['capitulate','conquer',' strike','confuse'],
+    answer:2
+   },{
+    q:'BEHAVIOUR (Synonyms)',
+    options:['conduct','blessing','character','response'],
+    answer:1
+   },{
+    q:'STRINGENT (Synonyms)',
+    options:['flexible','inflexible','staunch','tough'],
+    answer:4
+   },{
+    q:'DELIIBERATELY (Synonyms)',
+    options:['spontaneously','inadvertently','intentionally','naturally'],
+    answer:3
+   },{
+    q:'REGARD (Synonyms)',
+    options:['respect','liking','love','suspicion'],
+    answer:1
+   },{
+    q:'SWAP (Synonyms)',
+    options:['snap','exchange','break','exclude'],
+    answer:2
+   },{
+    q:'PRUDENT (Synonyms)',
+    options:['wise','cunning',' frank ','severe'],
+    answer:1
+   },{
+    q:'GENIUS (Synonyms)',
+    options:['generous','foreigner',' a person with uncommon intellect','athlete'],
+    answer:3
+   },{
+    q:'CULMINATION (Synonyms)',
+    options:['conclusion','climax','abyss','cultivation'],
+    answer:2
+   }
+   
+   
+
+  
+   
+  ]
+
+  totalQuestionSpan.innerHTML=10;
+  function load(){
+        questionNumberSpan.innerHTML=index+1;
+         question.innerHTML=questions[questionIndex].q;     
+         op1.innerHTML=questions[questionIndex].options[0];
+         op2.innerHTML=questions[questionIndex].options[1];
+         op3.innerHTML=questions[questionIndex].options[2];
+         op4.innerHTML=questions[questionIndex].options[3];
+         index++;
+  }
+  
+  function check(element){
+   if(element.id==questions[questionIndex].answer){
+    element.classList.add("correct");
+    updateAnswerTracker("correct")
+    score++;
+   // console.log("score:"+score)
+   }
+   else{
+    element.classList.add("wrong");
+    updateAnswerTracker("wrong")
+
+   }
+   disabledOptions()
+  }
+   
+  function disabledOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.add("disabled");
+      if(options[i].id==questions[questionIndex].answer){
+       options[i].classList.add("correct");
+      }
+
+     }
+  }
+  
+  function enableOptions(){
+     for(let i=0; i<options.length; i++) {
+      options[i].classList.remove("disabled","correct","wrong");
+     }
+  }
+
+  function validate(){
+      if(!options[0].classList.contains("disabled")){
+       // alert("Please Selecto one option")
+	   enableOptions();
+       randomQuestion();
+      }
+      else{
+       enableOptions();
+       randomQuestion();
+      }
+  }
+
+  function next(){
+    validate();
+  }
+   
+  function randomQuestion(){
+   let randomNumber=Math.floor(Math.random()*questions.length);
+   let hitDuplicate=0;
+       if(index==10){
+        quizOver();
+       }
+       else{
+         if(myArray.length>0){
+             for(let i=0; i<myArray.length; i++){
+               if(myArray[i]==randomNumber){
+                  hitDuplicate=1;
+                  break;
+               }
+             }
+             if(hitDuplicate==1){
+              randomQuestion();
+             }
+             else{
+               questionIndex=randomNumber;   
+              load();
+              myArr.push(questionIndex);
+             }
+         }
+         if(myArray.length==0){
+           questionIndex=randomNumber;   
+           load();
+           myArr.push(questionIndex);
+         }
+
+       myArray.push(randomNumber);
+       
+      }
+  }
+      
+  function answerTrakcer(){
+     for(let i=0; i<10; i++){
+      const div=document.createElement("div")
+         answerTrackerContainer.appendChild(div);
+     }
+  }
+
+ function updateAnswerTracker(classNam){
+   answerTrackerContainer.children[index-1].classList.add(classNam);
+ }
+
+ function quizOver(){
+    document.querySelector(".quiz-over").classList.add("show");
+    correctAnswerSpan.innerHTML=score;
+    totalQuestionSpan2.innerHTML=10;
+    percentage.innerHTML=(score/10)*100 + "%";
+ }
+ 
+ function tryAgain(){
+     window.location.reload();
+ }
+
+ window.onload=function(){
+  randomQuestion();
+  answerTrakcer();
+ 
+}
+
+</script>
+
+</body>
+</html>
